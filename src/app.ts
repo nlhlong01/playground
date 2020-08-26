@@ -6,6 +6,7 @@ import {
   makeGUI,
   reset
 } from './playground';
+import './styles.css';
 
 drawDatasetThumbnails();
 initTutorial();

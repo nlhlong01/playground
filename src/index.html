@@ -36,8 +36,10 @@ limitations under the License.
 
   <meta name="author" content="Daniel Smilkov and Shan Carter">
   <title>A Neural Network Playground</title>
-  <link rel="stylesheet" href="bundle.css" type="text/css">
-  <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500|Material+Icons" rel="stylesheet" type="text/css">
+  <!-- <link rel="stylesheet" href="bundle.css"> -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500|Material+Icons" type="text/css">
+  <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.indigo-blue.min.css">
+  <script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
   <script src="lib.js"></script>
 </head>
 
@@ -54,6 +56,29 @@ limitations under the License.
   <!-- <header>
     <h1 class="l--page">Tinker With a <b>Neural Network</b> <span class="optional">Right Here </span>in Your Browser.<br>Don’t Worry, You Can’t Break It. We Promise.</h1>
   </header> -->
+
+  <!-- Simple header with scrollable tabs. -->
+  <!-- <div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+    <header class="mdl-layout__header">
+      <div class="mdl-layout__header-row">
+        Title
+        <span class="mdl-layout-title">Machine Learning Playground</span>
+      </div>
+      Tabs
+      <div class="mdl-layout__tab-bar mdl-js-ripple-effect">
+        <a href="#tab-neural-network" class="mdl-layout__tab is-active">Neural Network</a>
+        <a href="#tab-random-forest" class="mdl-layout__tab">Random Forest</a>
+      </div>
+    </header>
+    <main class="mdl-layout__content">
+      <section class="mdl-layout__tab-panel is-active" id="tab-neural-network">
+        <div class="page-content">Your content goes here</div>
+      </section>
+      <section class="mdl-layout__tab-panel" id="tab-random-forest">
+        <div class="page-content">Your content goes here</div>
+      </section>
+    </main>
+  </div> -->
 
   <!-- Top Controls -->
   <div id="top-controls">
@@ -396,8 +421,8 @@ limitations under the License.
       </div>
     </div>
   </footer>
-  <script src="bundle.js"></script>
   <!-- Google analytics -->
   <script src="analytics.js"></script>
+  <script src="bundle.js"></script>
 </body>
 </html>
