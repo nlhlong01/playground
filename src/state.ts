@@ -16,6 +16,7 @@ limitations under the License.
 
 import * as nn from "./nn";
 import * as dataset from "./dataset";
+import 'seedrandom';
 
 /** Suffix added to the state when storing if a control is hidden or not. */
 const HIDE_STATE_SUFFIX = "_hide";

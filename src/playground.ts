@@ -29,6 +29,7 @@ import {
 } from "./state";
 import { Example2D, shuffle } from "./dataset";
 import { AppendingLineChart } from "./linechart";
+import 'seedrandom';
 
 let mainWidth;
 
