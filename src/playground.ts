@@ -190,7 +190,7 @@ const lineChart = new AppendingLineChart(
   ["#777", "black"]
 );
 
-export function makeGUI() {
+function makeGUI() {
   d3.select("#reset-button").on("click", () => {
     reset();
     userHasInteracted();
@@ -285,7 +285,8 @@ export function makeGUI() {
     userHasInteracted();
     heatMap.updateTestPoints(state.showTestData ? testData : []);
   });
-    // Check/uncheck the checkbox according to the current state.
+
+  // Check/uncheck the checkbox according to the current state.
   showTestData.property("checked", state.showTestData);
 
   const discretize = d3.select("#discretize").on("change", function () {
@@ -294,7 +295,8 @@ export function makeGUI() {
     userHasInteracted();
     updateUI();
   });
-    // Check/uncheck the checbox according to the current state.
+
+  // Check/uncheck the checbox according to the current state.
   discretize.property("checked", state.discretize);
 
   const percTrain = d3.select("#percTrainData").on("input", function () {
@@ -582,7 +584,8 @@ function drawNetwork(network: nn.Node[][]): void {
   const container = svg.append("g")
     .classed("core", true)
     .attr("transform", `translate(${padding},${padding})`);
-    // Draw the network layer by layer.
+
+  // Draw the network layer by layer.
   const numLayers = network.length;
   const featureWidth = 118;
   const layerScale = d3.scale.ordinal<number, number>()
@@ -967,7 +970,7 @@ function oneStep(): void {
   updateUI();
 }
 
-export function getOutputWeights(network: nn.Node[][]): number[] {
+function getOutputWeights(network: nn.Node[][]): number[] {
   const weights: number[] = [];
   for (let layerIdx = 0; layerIdx < network.length - 1; layerIdx++) {
     const currentLayer = network[layerIdx];
@@ -982,7 +985,7 @@ export function getOutputWeights(network: nn.Node[][]): number[] {
   return weights;
 }
 
-export function reset(onStartup = false) {
+function reset(onStartup = false) {
   lineChart.reset();
   state.serialize();
   if (!onStartup) {
@@ -1008,7 +1011,7 @@ export function reset(onStartup = false) {
   updateUI(true);
 }
 
-export function initTutorial() {
+function initTutorial() {
   if (state.tutorial == null || state.tutorial === "" || state.hideText) {
     return;
   }
@@ -1016,7 +1019,7 @@ export function initTutorial() {
   d3.selectAll("article div.l--body").remove();
   const tutorial = d3.select("article").append("div")
     .attr("class", "l--body");
-    // Insert tutorial text.
+  // Insert tutorial text.
   d3.html(`tutorials/${state.tutorial}.html`, (err, htmlFragment) => {
     if (err) {
       throw err;
@@ -1035,7 +1038,7 @@ export function initTutorial() {
   });
 }
 
-export function drawDatasetThumbnails() {
+function drawDatasetThumbnails() {
   function renderThumbnail(canvas, dataGenerator) {
     const w = 100;
     const h = 100;
@@ -1071,7 +1074,7 @@ export function drawDatasetThumbnails() {
   }
 }
 
-export function hideControls() {
+function hideControls() {
   // Set display:none to all the UI elements that are hidden.
   const hiddenProps = state.getHiddenProps();
   hiddenProps.forEach((prop) => {
@@ -1111,7 +1114,7 @@ export function hideControls() {
     .attr("href", window.location.href);
 }
 
-export function generateData(firstTime = false) {
+function generateData(firstTime = false) {
   if (!firstTime) {
     // Change the seed.
     state.seed = Math.random().toFixed(5);
@@ -1158,4 +1161,13 @@ function simulationStarted() {
     eventLabel: state.tutorial == null ? "" : state.tutorial,
   });
   parametersChanged = false;
+}
+
+export default function main() {
+  drawDatasetThumbnails();
+  initTutorial();
+  makeGUI();
+  generateData(true);
+  reset(true);
+  hideControls();
 }
