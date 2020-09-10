@@ -67,16 +67,19 @@ export class HeatMap {
       }
     }
 
-    this.xScale = d3.scale.linear()
+    this.xScale = d3.scale
+      .linear()
       .domain(xDomain)
       .range([0, width - 2 * padding]);
 
-    this.yScale = d3.scale.linear()
+    this.yScale = d3.scale
+      .linear()
       .domain(yDomain)
       .range([height - 2 * padding, 0]);
 
     // Get a range of colors.
-    const tmpScale = d3.scale.linear<string, number>()
+    const tmpScale = d3.scale
+      .linear<string, number>()
       .domain([0, 0.5, 1])
       .range(["#f59322", "#e8eaeb", "#0877bd"])
       .clamp(true);
@@ -89,7 +92,8 @@ export class HeatMap {
       .range(0, 1 + 1E-9, 1 / NUM_SHADES)
       .map((a) => tmpScale(a));
 
-    this.color = d3.scale.quantize()
+    this.color = d3.scale
+      .quantize()
       .domain([-1, 1])
       .range(colors);
 
@@ -116,12 +120,14 @@ export class HeatMap {
         .attr({
           width: width,
           height: height,
-        }).style({
+        })
+        .style({
           // Overlay the svg on top of the canvas.
           position: "absolute",
           left: "0",
           top: "0"
-        }).append("g")
+        })
+        .append("g")
         .attr("transform", `translate(${padding}, ${padding})`);
 
       this.svg.append("g").attr("class", "train");
@@ -201,13 +207,15 @@ export class HeatMap {
     const xDomain = this.xScale.domain();
     const yDomain = this.yScale.domain();
     points = points.filter((p) => p.x >= xDomain[0] && p.x <= xDomain[1]
-        && p.y >= yDomain[0] && p.y <= yDomain[1]);
+      && p.y >= yDomain[0] && p.y <= yDomain[1]);
 
     // Attach data to initially empty selection.
     const selection = container.selectAll("circle").data(points);
 
     // Insert elements to match length of points array.
-    selection.enter().append("circle").attr("r", 3);
+    selection.enter()
+      .append("circle")
+      .attr("r", 3);
 
     // Update points to be in the correct position.
     selection
