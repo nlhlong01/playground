@@ -13,8 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-import * as d3 from "d3";
-import { Example2D } from "./dataset";
+import * as d3 from 'd3';
+import { Example2D } from './dataset';
 
 export interface HeatMapSettings {
   [key: string]: any;
@@ -33,20 +33,20 @@ const NUM_SHADES = 30;
 export class HeatMap {
   private settings: HeatMapSettings = {
     showAxes: false,
-    noSvg: false,
+    noSvg: false
   };
 
-  private xScale;
+  private xScale: d3.scale.Linear<number, number>;
 
-  private yScale;
+  private yScale: d3.scale.Linear<number, number>;
 
   private numSamples: number;
 
   private color;
 
-  private canvas;
+  private canvas: d3.Selection<any>;
 
-  private svg;
+  private svg: d3.Selection<any>;
 
   constructor(
     width: number,
@@ -54,7 +54,7 @@ export class HeatMap {
     xDomain: [number, number],
     yDomain: [number, number],
     container,
-    userSettings?: HeatMapSettings,
+    userSettings?: HeatMapSettings
   ) {
     this.numSamples = numSamples;
     const height = width;
@@ -81,7 +81,7 @@ export class HeatMap {
     const tmpScale = d3.scale
       .linear<string, number>()
       .domain([0, 0.5, 1])
-      .range(["#f59322", "#e8eaeb", "#0877bd"])
+      .range(['#f59322', '#e8eaeb', '#0877bd'])
       .clamp(true);
 
     // Due to numerical error, we need to specify
@@ -89,68 +89,72 @@ export class HeatMap {
     // in order to guarantee that we will have end/step entries with
     // the last element being equal to end.
     const colors = d3
-      .range(0, 1 + 1E-9, 1 / NUM_SHADES)
+      .range(0, 1 + 1e-9, 1 / NUM_SHADES)
       .map((a) => tmpScale(a));
 
     this.color = d3.scale
-      .quantize()
-      .domain([-1, 1])
+      .quantize().domain([-1, 1])
       .range(colors);
 
-    container = container.append("div")
-      .style({
-        width: `${width}px`,
-        height: `${height}px`,
-        position: "relative",
-        top: `-${padding}px`,
-        left: `-${padding}px`,
-      });
+    container = container.append('div').style({
+      width: `${width}px`,
+      height: `${height}px`,
+      position: 'relative',
+      top: `-${padding}px`,
+      left: `-${padding}px`
+    });
 
-    this.canvas = container.append("canvas")
-      .attr("width", numSamples)
-      .attr("height", numSamples)
-      .style("width", `${width - 2 * padding}px`)
-      .style("height", `${height - 2 * padding}px`)
-      .style("position", "absolute")
-      .style("top", `${padding}px`)
-      .style("left", `${padding}px`);
+    this.canvas = container
+      .append('canvas')
+      .attr('width', numSamples)
+      .attr('height', numSamples)
+      .style('width', `${width - 2 * padding}px`)
+      .style('height', `${height - 2 * padding}px`)
+      .style('position', 'absolute')
+      .style('top', `${padding}px`)
+      .style('left', `${padding}px`);
 
     if (!this.settings.noSvg) {
-      this.svg = container.append("svg")
+      this.svg = container
+        .append('svg')
         .attr({
           width: width,
-          height: height,
+          height: height
         })
         .style({
           // Overlay the svg on top of the canvas.
-          position: "absolute",
-          left: "0",
-          top: "0"
+          position: 'absolute',
+          left: '0',
+          top: '0'
         })
-        .append("g")
-        .attr("transform", `translate(${padding}, ${padding})`);
+        .append('g')
+        .attr('transform', `translate(${padding}, ${padding})`);
 
-      this.svg.append("g").attr("class", "train");
-      this.svg.append("g").attr("class", "test");
+      this.svg.append('g').attr('class', 'train');
+      this.svg.append('g').attr('class', 'test');
     }
 
     if (this.settings.showAxes) {
-      const xAxis = d3.svg.axis()
+      const xAxis = d3.svg
+        .axis()
         .scale(this.xScale)
-        .orient("bottom");
+        .orient('bottom');
 
-      const yAxis = d3.svg.axis()
+      const yAxis = d3.svg
+        .axis()
         .scale(this.yScale)
-        .orient("right");
+        .orient('right');
 
-      this.svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", `translate(0,${height - 2 * padding})`)
+      this.svg
+        .append('g')
+        .attr('class', 'x axis')
+        .attr('transform', `translate(0,${height - 2 * padding})`)
         .call(xAxis);
 
-      this.svg.append("g")
-        .attr("class", "y axis")
-        .attr("transform", "translate(" + (width - 2 * padding) + ",0)")
+      this.svg
+        .append('g')
+        .attr('class', 'y axis')
+        .attr('transform', 'translate(' + (width - 2 * padding) + ',0)')
         .call(yAxis);
     }
   }
@@ -159,14 +163,14 @@ export class HeatMap {
     if (this.settings.noSvg) {
       throw Error("Can't add points since noSvg=true");
     }
-    this.updateCircles(this.svg.select("g.test"), points);
+    this.updateCircles(this.svg.select('g.test'), points);
   }
 
   updatePoints(points: Example2D[]): void {
     if (this.settings.noSvg) {
       throw Error("Can't add points since noSvg=true");
     }
-    this.updateCircles(this.svg.select("g.train"), points);
+    this.updateCircles(this.svg.select('g.train'), points);
   }
 
   updateBackground(data: number[][], discretize: boolean): void {
@@ -175,15 +179,12 @@ export class HeatMap {
 
     if (dx !== this.numSamples || dy !== this.numSamples) {
       throw new Error(
-        "The provided data matrix must be of size "
-        + "numSamples X numSamples"
+        'The provided data matrix must be of size ' + 'numSamples X numSamples'
       );
     }
 
     // Compute the pixel colors; scaled by CSS.
-    const context = (
-      (this.canvas.node() as HTMLCanvasElement).getContext("2d")
-    );
+    const context = (this.canvas.node() as HTMLCanvasElement).getContext('2d');
     const image = context.createImageData(dx, dy);
 
     for (let y = 0, p = -1; y < dy; ++y) {
@@ -206,24 +207,30 @@ export class HeatMap {
     // Keep only points that are inside the bounds.
     const xDomain = this.xScale.domain();
     const yDomain = this.yScale.domain();
-    points = points.filter((p) => p.x >= xDomain[0] && p.x <= xDomain[1]
-      && p.y >= yDomain[0] && p.y <= yDomain[1]);
+    points = points.filter(
+      (p) =>
+        p.x >= xDomain[0] &&
+        p.x <= xDomain[1] &&
+        p.y >= yDomain[0] &&
+        p.y <= yDomain[1]
+    );
 
     // Attach data to initially empty selection.
-    const selection = container.selectAll("circle").data(points);
+    const selection = container.selectAll('circle').data(points);
 
     // Insert elements to match length of points array.
-    selection.enter()
-      .append("circle")
-      .attr("r", 3);
+    selection
+      .enter()
+      .append('circle')
+      .attr('r', 3);
 
     // Update points to be in the correct position.
     selection
       .attr({
         cx: (d: Example2D) => this.xScale(d.x),
-        cy: (d: Example2D) => this.yScale(d.y),
+        cy: (d: Example2D) => this.yScale(d.y)
       })
-      .style("fill", (d) => this.color(d.label));
+      .style('fill', (d) => this.color(d.label));
 
     // Remove points if the length has gone down.
     selection.exit().remove();
@@ -232,12 +239,14 @@ export class HeatMap {
 
 export function reduceMatrix(matrix: number[][], factor: number): number[][] {
   if (matrix.length !== matrix[0].length) {
-    throw new Error("The provided matrix must be a square matrix");
+    throw new Error('The provided matrix must be a square matrix');
   }
 
   if (matrix.length % factor !== 0) {
-    throw new Error("The width/height of the matrix must be divisible by " +
-      "the reduction factor");
+    throw new Error(
+      'The width/height of the matrix must be divisible by ' +
+        'the reduction factor'
+    );
   }
 
   const result: number[][] = new Array(matrix.length / factor);
@@ -255,7 +264,7 @@ export function reduceMatrix(matrix: number[][], factor: number): number[][] {
         }
       }
 
-      avg /= (factor * factor);
+      avg /= factor * factor;
       result[i / factor][j / factor] = avg;
     }
   }

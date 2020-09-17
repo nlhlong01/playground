@@ -16,7 +16,6 @@ limitations under the License.
 
 import * as d3 from 'd3';
 import * as nn from './nn';
-import * as rf from './randomforest';
 import { HeatMap, reduceMatrix } from './heatmap';
 import {
   State,
@@ -31,6 +30,7 @@ import {
 import { Example2D, shuffle } from './dataset';
 import { AppendingLineChart } from './linechart';
 import 'seedrandom';
+import 'ml-random-forest';
 
 let mainWidth;
 
@@ -59,6 +59,7 @@ const RECT_SIZE = 30;
 const BIAS_SIZE = 10;
 const NUM_SAMPLES_CLASSIFY = 500;
 const NUM_SAMPLES_REGRESS = 1200;
+// # of points per direction.
 const DENSITY = 100;
 
 enum HoverType {
@@ -71,7 +72,7 @@ interface InputFeature {
   label?: string;
 }
 
-// Input function types
+// Input feature functions.
 const INPUTS: { [name: string]: InputFeature } = {
   x: { f: (x, y) => x, label: 'X_1' },
   y: { f: (x, y) => y, label: 'X_2' },
@@ -102,9 +103,7 @@ const HIDABLE_CONTROLS = [
 
 class Player {
   private timerIndex = 0;
-
   private isPlaying = false;
-
   private callback: (isPlaying: boolean) => void = null;
 
   /** Plays/pauses the player. */
@@ -200,6 +199,7 @@ const lineChart = new AppendingLineChart(
 );
 
 function makeGUI() {
+  /* Top controls */
   d3.select('#reset-button').on('click', () => {
     reset();
     userHasInteracted();
@@ -223,11 +223,11 @@ function makeGUI() {
     oneStep();
   });
 
+  /* Data column */
   d3.select('#data-regen-button').on('click', () => {
     generateData();
     parametersChanged = true;
   });
-
   const dataThumbnails = d3.selectAll('canvas[data-dataset]');
   dataThumbnails.on('click', function () {
     const newDataset = datasets[this.dataset.dataset];
@@ -265,6 +265,7 @@ function makeGUI() {
   d3.select(`canvas[data-regDataset=${regDatasetKey}]`)
     .classed("selected", true);
 
+  /* Hidden layers */
   // TODO: Remove when switched to Random Forest
   d3.select('#add-layers').on('click', () => {
     if (state.numHiddenLayers >= 6) return;
@@ -282,7 +283,8 @@ function makeGUI() {
     reset();
   });
 
-  const showTestData = d3.select('#show-test-data').on('change', () => {
+  /* Output Column */
+  const showTestData = d3.select('#show-test-data').on('change', function () {
     state.showTestData = this.checked;
     state.serialize();
     userHasInteracted();
@@ -292,7 +294,7 @@ function makeGUI() {
   // Check/uncheck the checkbox according to the current state.
   showTestData.property('checked', state.showTestData);
 
-  const discretize = d3.select('#discretize').on('change', () => {
+  const discretize = d3.select('#discretize').on('change', function () {
     state.discretize = this.checked;
     state.serialize();
     userHasInteracted();
@@ -302,8 +304,9 @@ function makeGUI() {
   // Check/uncheck the checbox according to the current state.
   discretize.property('checked', state.discretize);
 
+  /* Network configurations */
   // Configure the ratio of training data to test data.
-  const percTrain = d3.select('#percTrainData').on('input', () => {
+  const percTrain = d3.select('#percTrainData').on('input', function () {
     state.percTrainData = this.value;
     d3.select("label[for='percTrainData'] .value")
       .text(this.value);
@@ -391,6 +394,7 @@ function makeGUI() {
   });
   problem.property('value', getKeyFromValue(problems, state.problem));
 
+  /* Color map */
   // Add scale to the gradient color map.
   const x = d3.scale
     .linear()
@@ -420,6 +424,7 @@ function makeGUI() {
     }
   });
 
+  // TODO: Remove this feature
   // Hide the text below the visualization depending on the URL.
   if (state.hideText) {
     d3.select('#article-text').style('display', 'none');
@@ -462,13 +467,13 @@ function drawNode(
   cy: number,
   nodeId: string,
   isInput: boolean,
-  container,
+  container: d3.Selection<any>,
   node?: nn.Node
 ) {
   const x = cx - RECT_SIZE / 2;
   const y = cy - RECT_SIZE / 2;
 
-
+  /* A node group containing node canvas and bias canvas */
   const nodeGroup = container.append('g').attr({
     class: 'node',
     id: `node${nodeId}`,
@@ -482,9 +487,11 @@ function drawNode(
     width: RECT_SIZE,
     height: RECT_SIZE
   });
+
   const activeOrNotClass = state[nodeId] ? 'active' : 'inactive';
   if (isInput) {
     const label = INPUTS[nodeId].label != null ? INPUTS[nodeId].label : nodeId;
+
     // Draw the input label.
     const text = nodeGroup.append('text').attr({
       class: 'main-label',
@@ -492,18 +499,19 @@ function drawNode(
       y: RECT_SIZE / 2,
       'text-anchor': 'end'
     });
+
     if (/[_^]/.test(label)) {
       const myRe = /(.*?)([_^])(.)/g;
-      let myArray;
-      let lastIndex;
+      let myArray: RegExpExecArray;
+      let lastIndex: number;
       while ((myArray = myRe.exec(label)) != null) {
         lastIndex = myRe.lastIndex;
         const prefix = myArray[1];
         const sep = myArray[2];
         const suffix = myArray[3];
-        if (prefix) {
-          text.append('tspan').text(prefix);
-        }
+
+        if (prefix) text.append('tspan').text(prefix);
+
         text
           .append('tspan')
           .attr('baseline-shift', sep === '_' ? 'sub' : 'super')
@@ -513,18 +521,18 @@ function drawNode(
       if (label.substring(lastIndex)) {
         text.append('tspan').text(label.substring(lastIndex));
       }
-    } else {
-      text.append('tspan').text(label);
-    }
+    } else text.append('tspan').text(label);
+
     nodeGroup.classed(activeOrNotClass, true);
   }
+
   if (!isInput) {
     // Draw the node's bias.
     nodeGroup
       .append('rect')
       .attr({
         id: `bias-${nodeId}`,
-        x: - BIAS_SIZE - 2,
+        x: -BIAS_SIZE - 2,
         y: RECT_SIZE - BIAS_SIZE + 3,
         width: BIAS_SIZE,
         height: BIAS_SIZE
@@ -555,7 +563,7 @@ function drawNode(
       div.classed('hovered', true);
       nodeGroup.classed('hovered', true);
       updateDecisionBoundary(network, false);
-      // Change the background of the heat map accordingly.
+      // Change the background of the heat map according to the hovered node.
       heatMap.updateBackground(boundary[nodeId], state.discretize);
     })
     .on('mouseleave', () => {
@@ -592,20 +600,24 @@ function drawNode(
   div.datum({ heatmap: nodeHeatMap, id: nodeId });
 }
 
-// Draw network
+// Draw the whole neural network including inputs, neurons, outputs.
 function drawNetwork(network: nn.Node[][]): void {
   const svg = d3.select('#svg');
   // Remove all svg elements.
   svg.select('g.core').remove();
   // Remove all div elements.
-  d3.select('#network').selectAll('div.canvas').remove();
-  d3.select('#network').selectAll('div.plus-minus-neurons').remove();
+  d3.select('#network')
+    .selectAll('div.canvas')
+    .remove();
+  d3.select('#network')
+    .selectAll('div.plus-minus-neurons')
+    .remove();
 
   // Get the width of the svg container.
   const padding = 3;
-  const co = d3.select('.column.output').node() as HTMLDivElement;
-  const cf = d3.select('.column.features').node() as HTMLDivElement;
-  const width = co.offsetLeft - cf.offsetLeft;
+  const columnOutput = d3.select('.column.output').node() as HTMLDivElement;
+  const columnFeature = d3.select('.column.features').node() as HTMLDivElement;
+  const width = columnOutput.offsetLeft - columnFeature.offsetLeft;
   svg.attr('width', width);
 
   // Map of all node coordinates.
@@ -737,6 +749,7 @@ function getRelativeHeight(selection) {
   return node.offsetHeight + node.offsetTop;
 }
 
+/* Add/remove a reuron to a layer. */
 function addPlusMinusControl(x: number, layerIdx: number) {
   const div = d3
     .select('#network')
@@ -888,7 +901,10 @@ function drawLink(
  */
 function updateDecisionBoundary(network: nn.Node[][], firstTime: boolean) {
   if (firstTime) {
+    // Create an array holding all decision boundaries.
+    // Each of them is a 100 x 100 array.
     boundary = {};
+    // Go through all neurons and output, igoring the inputs.
     nn.forEachNode(network, true, (node) => {
       boundary[node.id] = new Array(DENSITY);
     });
@@ -923,6 +939,7 @@ function updateDecisionBoundary(network: nn.Node[][], firstTime: boolean) {
       const x = xScale(i);
       const y = yScale(j);
       const input = constructInput(x, y);
+      // Get the results from the network.
       nn.forwardProp(network, input);
       nn.forEachNode(network, true, (node) => {
         boundary[node.id][i][j] = node.output;
@@ -951,12 +968,15 @@ function getLoss(network: nn.Node[][], dataPoints: Example2D[]): number {
 function updateUI(firstStep = false) {
   // Update the links visually.
   updateWeightsUI(network, d3.select('g.core'));
+
   // Update the bias values visually.
   updateBiasesUI(network);
-  // Get the decision boundary of the network.
+
+  // Get the decision boundary of the network output.
   updateDecisionBoundary(network, firstStep);
-  const selectedId =
-    selectedNodeId != null ? selectedNodeId : nn.getOutputNode(network).id;
+  const selectedId = selectedNodeId != null
+    ? selectedNodeId
+    : nn.getOutputNode(network).id;
   heatMap.updateBackground(boundary[selectedId], state.discretize);
 
   // Update all decision boundaries.
@@ -999,6 +1019,7 @@ function constructInputIds(): string[] {
   return result;
 }
 
+// Create selected inputs.
 function constructInput(x: number, y: number): number[] {
   const input: number[] = [];
   for (const inputName in INPUTS) {
@@ -1040,6 +1061,7 @@ function getOutputWeights(network: nn.Node[][]): number[] {
   return weights;
 }
 
+/* Reset the learning progress */
 function reset(onStartup = false) {
   lineChart.reset();
   state.serialize();
@@ -1086,9 +1108,7 @@ function initTutorial() {
     .attr('class', 'l--body');
   // Insert tutorial text.
   d3.html(`tutorials/${state.tutorial}.html`, (err, htmlFragment) => {
-    if (err) {
-      throw err;
-    }
+    if (err) throw err;
     tutorial.node().appendChild(htmlFragment);
     // If the tutorial has a <title> tag, set the page title to that.
     const title = tutorial.select('title');
@@ -1178,6 +1198,7 @@ function hideControls() {
   d3.select('.hide-controls-link').attr('href', window.location.href);
 }
 
+/* Generate data and display in the heatmap. */
 function generateData(firstTime = false) {
   if (!firstTime) {
     // Change the seed.
@@ -1191,7 +1212,9 @@ function generateData(firstTime = false) {
       ? NUM_SAMPLES_REGRESS
       : NUM_SAMPLES_CLASSIFY;
   const generator =
-    state.problem === Problem.CLASSIFICATION ? state.dataset : state.regDataset;
+    state.problem === Problem.CLASSIFICATION
+      ? state.dataset
+      : state.regDataset;
   const data = generator(numSamples, state.noise / 100);
   // Shuffle the data in-place.
   shuffle(data);

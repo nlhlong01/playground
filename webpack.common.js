@@ -7,7 +7,7 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 module.exports = {
   context: path.resolve(__dirname, 'src'),
-  entry: './app.ts',
+  entry: './playground_rf.ts',
   plugins: [
     new HtmlWebpackPlugin({
       template: './index.html'

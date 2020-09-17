@@ -59,7 +59,8 @@ export function classifyTwoGaussData(numSamples: number, noise: number):
 Example2D[] {
   const points: Example2D[] = [];
 
-  const varianceScale = d3.scale.linear()
+  const varianceScale = d3.scale
+    .linear()
     .domain([0, 0.5])
     .range([0.5, 4]);
   const variance = varianceScale(noise);
