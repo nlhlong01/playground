@@ -11,7 +11,7 @@ import {
   Problem
 } from './state';
 import { Example2D, shuffle } from './dataset';
-// import { AppendingLineChart } from './linechart';
+import { AppendingLineChart } from './linechart';
 import 'seedrandom';
 import { RandomForestClassifier } from 'ml-random-forest';
 import './styles.css';
@@ -21,10 +21,10 @@ import './analytics';
 
 let mainWidth;
 
-const NUM_SAMPLES_CLASSIFY = 500;
+const NUM_SAMPLES_CLASSIFY = 300;
 const NUM_SAMPLES_REGRESS = 1200;
 // # of points per direction.
-const DENSITY = 100;
+const DENSITY = 50;
 
 interface InputFeature {
   f: (x: number, y: number) => number;
@@ -46,12 +46,12 @@ const state = State.deserializeState();
 
 // TODO: Doublecheck this comment
 // All points in the heatmap background
-let boundary: { [id: string]: number[][] } = {};
+let boundary: number[][] = [];
 
 // Plot the heatmap.
 const xDomain: [number, number] = [-6, 6];
 const heatMap = new HeatMap(
-  300,
+  500,
   DENSITY,
   xDomain,
   xDomain,
@@ -65,34 +65,61 @@ const colorScale = d3.scale
   .range(['#f59322', '#e8eaeb', '#0877bd'])
   .clamp(true);
 
+let classifier: RandomForestClassifier = null;
 let trainData: Example2D[] = [];
 let testData: Example2D[] = [];
-// let lossTrain = 0;
-// let lossTest = 0;
+let lossTrain = 0;
+let lossTest = 0;
 // Line chart showing train & test errors
-// const lineChart = new AppendingLineChart(
-//   d3.select("#linechart"),
-//   ["#777", "black"]
-// );
+const lineChart = new AppendingLineChart(
+  d3.select("#linechart"),
+  ["#777", "black"]
+);
+
+function train() {
+  // RF implementation does not accept negative label
+  const labelScale = d3.scale
+    .linear()
+    .domain([-1, 1])
+    .range([0, 1]);
+
+  const options = {
+    seed: 20,
+    nEstimators: state.nTrees,
+    maxFeatures: state.maxFeatures,
+    treeOptions: {
+      maxDepth: state.maxDepth
+    }
+  };
+
+  const trainingSet = trainData.map((d) => [d.x, d.y]);
+  const labels = trainData.map((d) => labelScale(d.label));
+
+  classifier = new RandomForestClassifier(options);
+  classifier.train(trainingSet, labels);
+}
 
 function makeGUI() {
   /* Top controls */
   d3.select('#reset-button').on('click', () => {
-    // reset();
-    // userHasInteracted();
+    reset();
+    userHasInteracted();
     d3.select('#play-pause-button');
   });
 
   d3.select('#play-pause-button').on('click', () => {
-    // // Change the button's content.
-    // userHasInteracted();
+    // Change the button's content.
+    userHasInteracted();
+    train();
+    updateUI();
     // player.playOrPause();
   });
 
   /* Data column */
   d3.select('#data-regen-button').on('click', () => {
     generateData();
-    // parametersChanged = true;
+    parametersChanged = true;
+    reset();
   });
   const dataThumbnails = d3.selectAll('canvas[data-dataset]');
   dataThumbnails.on('click', function () {
@@ -104,8 +131,8 @@ function makeGUI() {
     dataThumbnails.classed('selected', false);
     d3.select(this).classed('selected', true);
     generateData();
-    // parametersChanged = true;
-    // reset();
+    parametersChanged = true;
+    reset();
   });
 
   const datasetKey = getKeyFromValue(datasets, state.dataset);
@@ -122,20 +149,20 @@ function makeGUI() {
     regDataThumbnails.classed('selected', false);
     d3.select(this).classed('selected', true);
     generateData();
-    // parametersChanged = true;
-    // reset();
+    parametersChanged = true;
+    reset();
   });
 
   const regDatasetKey = getKeyFromValue(regDatasets, state.regDataset);
   // Select the dataset according to the current state.
   d3.select(`canvas[data-regDataset=${regDatasetKey}]`)
-    .classed("selected", true);
+    .classed('selected',true);
 
   /* Output Column */
   const showTestData = d3.select('#show-test-data').on('change', function () {
     state.showTestData = this.checked;
     state.serialize();
-    // userHasInteracted();
+    userHasInteracted();
     heatMap.updateTestPoints(state.showTestData ? testData : []);
   });
 
@@ -143,10 +170,10 @@ function makeGUI() {
   showTestData.property('checked', state.showTestData);
 
   const discretize = d3.select('#discretize').on('change', function () {
-    // state.discretize = this.checked;
-    // state.serialize();
-    // userHasInteracted();
-    // updateUI();
+    state.discretize = this.checked;
+    state.serialize();
+    userHasInteracted();
+    updateUI();
   });
 
   // Check/uncheck the checbox according to the current state.
@@ -159,8 +186,8 @@ function makeGUI() {
     d3.select("label[for='percTrainData'] .value")
       .text(this.value);
     generateData();
-    // parametersChanged = true;
-    // reset();
+    parametersChanged = true;
+    reset();
   });
   percTrain.property('value', state.percTrainData);
   d3.select("label[for='percTrainData'] .value")
@@ -172,8 +199,8 @@ function makeGUI() {
     d3.select("label[for='noise'] .value")
       .text(this.value);
     generateData();
-    // parametersChanged = true;
-    // reset();
+    parametersChanged = true;
+    reset();
   });
   const currentMax = parseInt(noise.property('max'));
   if (state.noise > currentMax) {
@@ -184,23 +211,55 @@ function makeGUI() {
   d3.select("label[for='noise'] .value")
     .text(state.noise);
 
+  // Configure the number of trees
+  const nTrees = d3.select('#nTrees').on('input', function () {
+    state.nTrees = this.value;
+    d3.select("label[for='nTrees'] .value")
+      .text(this.value);
+    parametersChanged = true;
+    reset();
+  });
+  nTrees.property('value', state.nTrees);
+  d3.select("label[for='nTrees'] .value")
+    .text(state.nTrees);
+
+  // Configure the number of trees
+  const maxDepth = d3.select('#maxDepth').on('input', function () {
+    state.maxDepth = this.value;
+    d3.select("label[for='maxDepth'] .value")
+      .text(this.value);
+    parametersChanged = true;
+    reset();
+  });
+  maxDepth.property('value', state.maxDepth);
+  d3.select("label[for='maxDepth'] .value")
+    .text(state.maxDepth);
+
   const batchSize = d3.select('#batchSize').on('input', function () {
     state.batchSize = this.value;
     d3.select("label[for='batchSize'] .value")
       .text(this.value);
-    // parametersChanged = true;
-    // reset();
+    parametersChanged = true;
+    reset();
   });
   batchSize.property('value', state.batchSize);
   d3.select("label[for='batchSize'] .value")
     .text(state.batchSize);
 
+  const maxFeatures = d3.select('#maxFeatures').on('change', function () {
+    state.maxFeatures = +this.value;
+    state.serialize();
+    userHasInteracted();
+    parametersChanged = true;
+  });
+  maxFeatures.property('value', state.maxFeatures);
+
   const problem = d3.select('#problem').on('change', function () {
     state.problem = problems[this.value];
     generateData();
     drawDatasetThumbnails();
-    // parametersChanged = true;
-    // reset();
+    parametersChanged = true;
+    reset();
   });
   problem.property('value', getKeyFromValue(problems, state.problem));
 
@@ -221,18 +280,6 @@ function makeGUI() {
     .attr('class', 'x axis')
     .attr('transform', 'translate(0,10)')
     .call(xAxis);
-
-  // Listen for css-responsive changes and redraw the svg network.
-  window.addEventListener('resize', () => {
-    const newWidth = document
-      .querySelector('#main-part')
-      .getBoundingClientRect().width;
-    if (newWidth !== mainWidth) {
-      mainWidth = newWidth;
-      // drawNetwork(network);
-      updateUI(true);
-    }
-  });
 }
 
 /**
@@ -241,18 +288,7 @@ function makeGUI() {
  * It returns a map where each key is the node ID and the value is a square
  * matrix of the outputs of the network for each input in the grid respectively.
  */
-function updateDecisionBoundary(network: nn.Node[][], firstTime: boolean) {
-  if (firstTime) {
-    boundary = {};
-    // Go through all neurons and output, igoring the inputs.
-    nn.forEachNode(network, true, (node) => {
-      boundary[node.id] = new Array(DENSITY);
-    });
-    // Go through all predefined inputs.
-    for (const nodeId in INPUTS) {
-      boundary[nodeId] = new Array(DENSITY);
-    }
-  }
+function updateDecisionBoundary() {
   const xScale = d3.scale
     .linear()
     .domain([0, DENSITY - 1])
@@ -262,34 +298,16 @@ function updateDecisionBoundary(network: nn.Node[][], firstTime: boolean) {
     .domain([DENSITY - 1, 0])
     .range(xDomain);
 
-  let i = 0;
-  let j = 0;
+  let i: number;
+  let j: number;
+
   for (i = 0; i < DENSITY; i++) {
-    if (firstTime) {
-      nn.forEachNode(network, true, (node) => {
-        boundary[node.id][i] = new Array(DENSITY);
-      });
-      // Go through all predefined inputs.
-      for (const nodeId in INPUTS) {
-        boundary[nodeId][i] = new Array(DENSITY);
-      }
-    }
+    boundary[i] = new Array(DENSITY);
     for (j = 0; j < DENSITY; j++) {
       // 1 for points inside, and 0 for points outside the circle.
       const x = xScale(i);
       const y = yScale(j);
-      const input = constructInput(x, y);
-      // Get the results from the network.
-      nn.forwardProp(network, input);
-      nn.forEachNode(network, true, (node) => {
-        boundary[node.id][i][j] = node.output;
-      });
-      if (firstTime) {
-        // Go through all predefined inputs.
-        for (const nodeId in INPUTS) {
-          boundary[nodeId][i][j] = INPUTS[nodeId].f(x, y);
-        }
-      }
+      boundary[i][j] = classifier.predict([[x, y]])[0];
     }
   }
 }
@@ -306,12 +324,9 @@ function updateDecisionBoundary(network: nn.Node[][], firstTime: boolean) {
 // }
 
 function updateUI(firstStep = false) {
-  // // Get the decision boundary of the network.
-  // updateDecisionBoundary(network, firstStep);
-  // const selectedId = selectedNodeId != null
-  //   ? selectedNodeId
-  //   : nn.getOutputNode(network).id;
-  // heatMap.updateBackground(boundary[selectedId], state.discretize);
+  // Get the decision boundary of the network.
+  updateDecisionBoundary();
+  heatMap.updateBackground(boundary, state.discretize);
 
   // function zeroPad(n: number): string {
   //   const pad = '000000';
@@ -343,13 +358,29 @@ function updateUI(firstStep = false) {
 //   return result;
 // }
 
-// Create selected inputs.
-function constructInput(x: number, y: number): number[] {
-  const input: number[] = [];
-  for (const inputName in INPUTS) {
-    if (state[inputName]) input.push(INPUTS[inputName].f(x, y));
+// // Create selected inputs.
+// function constructInput(x: number, y: number): number[] {
+//   const input: number[] = [];
+//   for (const inputName in INPUTS) {
+//     if (state[inputName]) input.push(INPUTS[inputName].f(x, y));
+//   }
+//   return input;
+// }
+
+/* Reset the learning progress */
+function reset(onStartup = false) {
+  // lineChart.reset();
+  state.serialize();
+  if (!onStartup) {
+    userHasInteracted();
   }
-  return input;
+  classifier = null;
+  boundary = [];
+
+  // lossTrain = getLoss(network, trainData);
+  // lossTest = getLoss(network, testData);
+  heatMap.clearBackground();
+  // updateUI(true);
 }
 
 function drawDatasetThumbnails() {
@@ -419,62 +450,32 @@ function generateData(firstTime = false) {
   heatMap.updateTestPoints(state.showTestData ? testData : []);
 }
 
-// let firstInteraction = true;
-// let parametersChanged = false;
+let firstInteraction = true;
+let parametersChanged = false;
 
-// function userHasInteracted() {
-//   if (!firstInteraction) {
-//     return;
-//   }
-//   firstInteraction = false;
-//   let page = 'index';
-//   if (state.tutorial != null && state.tutorial !== '') {
-//     page = `/v/tutorials/${state.tutorial}`;
-//   }
-//   ga('set', 'page', page);
-//   ga('send', 'pageview', { sessionControl: 'start' });
-// }
+function userHasInteracted() {
+  if (!firstInteraction) {
+    return;
+  }
+  firstInteraction = false;
+  let page = 'index';
+  if (state.tutorial != null && state.tutorial !== '') {
+    page = `/v/tutorials/${state.tutorial}`;
+  }
+  ga('set', 'page', page);
+  ga('send', 'pageview', { sessionControl: 'start' });
+}
+
+function simulationStarted() {
+  ga('send', {
+    hitType: 'event',
+    eventCategory: 'Starting Simulation',
+    eventAction: parametersChanged ? 'changed' : 'unchanged',
+    eventLabel: state.tutorial == null ? '' : state.tutorial
+  });
+  parametersChanged = false;
+}
 
 drawDatasetThumbnails();
 makeGUI();
 generateData(true);
-
-const trainingSet = trainData.map((d) => [d.x, d.y]);
-const labels = trainData.map((d) => d.label < 0 ? 0 : d.label); 
-const testSet = testData.map((d) => [d.x, d.y]);
-
-const options = {
-  seed: 15,
-  maxFeatures: 1,
-  nEstimators: 100,
-  treeOptions: {
-    maxDepth: 10
-  }
-};
-
-const classifier = new RandomForestClassifier(options);
-classifier.train(trainingSet, labels);
-
-boundary = {};
-boundary.output = new Array(DENSITY);
-const xScale = d3.scale
-  .linear()
-  .domain([0, DENSITY - 1])
-  .range(xDomain);
-const yScale = d3.scale
-  .linear()
-  .domain([DENSITY - 1, 0])
-  .range(xDomain);
-
-let i = 0;
-let j = 0;
-for (i = 0; i < DENSITY; i++) {
-  boundary.output[i] = new Array(DENSITY);
-  for (j = 0; j < DENSITY; j++) {
-    const x = xScale(i);
-    const y = yScale(j);
-    const output = classifier.predict([[x, y]]);
-    boundary.output[i][j] = output[0];
-  }
-}
-heatMap.updateBackground(boundary.output, state.discretize);

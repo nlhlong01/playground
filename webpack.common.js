@@ -10,7 +10,7 @@ module.exports = {
   entry: './playground_rf.ts',
   plugins: [
     new HtmlWebpackPlugin({
-      template: './index.html'
+      template: './index_rf.html'
     }),
     new MiniCssExtractPlugin({
       filename: 'bundle.css'

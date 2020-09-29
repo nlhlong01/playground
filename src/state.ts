@@ -127,7 +127,10 @@ export class State {
     { name: 'tutorial', type: Type.STRING },
     { name: 'problem', type: Type.OBJECT, keyMap: problems },
     { name: 'initZero', type: Type.BOOLEAN },
-    { name: 'hideText', type: Type.BOOLEAN }
+    { name: 'hideText', type: Type.BOOLEAN },
+    { name: 'nTrees', type: Type.NUMBER },
+    { name: 'maxDepth', type: Type.NUMBER },
+    { name: 'maxFeatures', type: Type.NUMBER },
   ];
 
   [key: string]: any;
@@ -190,6 +193,12 @@ export class State {
   regDataset: dataset.DataGenerator = dataset.regressPlane;
 
   seed: string;
+
+  nTrees = 100;
+
+  maxDepth = 5;
+
+  maxFeatures = 1;
 
   /**
    * Deserializes the state from the url hash.

@@ -248,7 +248,7 @@ header h1 .optional {
   display: -webkit-flex;
   display: flex;
   -webkit-justify-content: space-betweenspace-between;
-  justify-content: space-between;
+  justify-content: center;
 }
 
 #top-controls .timeline-controls {
@@ -259,7 +259,6 @@ header h1 .optional {
   display: flex;
   align-items: center;
   margin-right: 20px;
-  width: 140px;
 }
 
 #play-pause-button .material-icons {
@@ -282,7 +281,7 @@ header h1 .optional {
 
 #top-controls .control {
   flex-grow: 1;
-  max-width: 180px;
+  max-width: 172px;
   min-width: 110px;
   margin-left: 30px;
   margin-top: 6px;
@@ -295,10 +294,11 @@ header h1 .optional {
   display: block;
   margin-bottom: 6px;
   font-weight: 300;
+  text-align: center;
 }
 
 #top-controls .control .value {
-  font-size: 24px;
+  font-size: 13px;
   margin: 0;
   font-weight: 300;
 }
@@ -376,7 +376,7 @@ header h1 .optional {
   display: -webkit-flex;
   display: flex;
   -webkit-justify-content: space-between;
-  justify-content: space-between;
+  justify-content: center;
   margin-top: 30px;
   margin-bottom: 50px;
   padding-top: 2px;
@@ -387,6 +387,10 @@ header h1 .optional {
   #main-part {
     margin-top: 50px;
   }
+}
+
+#main-part .column {
+  padding: 20px;
 }
 
 #main-part h4 {
@@ -748,11 +752,11 @@ g.column rect {
   width: 40%;
 }
 
-#main-part .hidden-layers h4 {
+/* #main-part .hidden-layers h4 {
   -webkit-justify-content: center;
   justify-content: center;
   margin-top: -5px;
-}
+} */
 
 .hidden-layers #layers-label {
   width: 125px;

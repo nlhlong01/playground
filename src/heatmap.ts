@@ -44,9 +44,9 @@ export class HeatMap {
 
   private color;
 
-  private canvas: d3.Selection<any>;
+  private canvas;
 
-  private svg: d3.Selection<any>;
+  private svg;
 
   constructor(
     width: number,
@@ -173,7 +173,19 @@ export class HeatMap {
     this.updateCircles(this.svg.select('g.train'), points);
   }
 
+  clearBackground(): void {
+    const canvas = this.canvas.node();
+    const context = canvas.getContext('2d');
+    context.clearRect(0, 0, canvas.width, canvas.height);
+  }
+
   updateBackground(data: number[][], discretize: boolean): void {
+    const flattenedData = data.reduce((acc, val) => acc.concat(val), []);
+    const labelScale = d3.scale
+      .linear()
+      .domain([d3.min(flattenedData), d3.max(flattenedData)])
+      .range([-1, 1]);
+
     const dx = data[0].length;
     const dy = data.length;
 
@@ -189,7 +201,7 @@ export class HeatMap {
 
     for (let y = 0, p = -1; y < dy; ++y) {
       for (let x = 0; x < dx; ++x) {
-        let value = data[x][y];
+        let value = data ? labelScale(data[x][y]) : 0;
         if (discretize) {
           value = (value >= 0 ? 1 : -1);
         }

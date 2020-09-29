@@ -358,12 +358,14 @@ function makeGUI() {
     getKeyFromValue(activations, state.activation)
   );
 
-  const learningRate = d3.select('#learningRate').on('change', function () {
-    state.learningRate = +this.value;
-    state.serialize();
-    userHasInteracted();
-    parametersChanged = true;
-  });
+  const learningRate = d3
+    .select('#learningRate')
+    .on('change', function () {
+      state.learningRate = +this.value;
+      state.serialize();
+      userHasInteracted();
+      parametersChanged = true;
+    });
   learningRate.property('value', state.learningRate);
 
   const regularDropdown = d3
@@ -378,11 +380,13 @@ function makeGUI() {
     getKeyFromValue(regularizations, state.regularization)
   );
 
-  const regularRate = d3.select('#regularRate').on('change', function () {
-    state.regularizationRate = +this.value;
-    parametersChanged = true;
-    reset();
-  });
+  const regularRate = d3
+    .select('#regularRate')
+    .on('change', function () {
+      state.regularizationRate = +this.value;
+      parametersChanged = true;
+      reset();
+    });
   regularRate.property('value', state.regularizationRate);
 
   const problem = d3.select('#problem').on('change', function () {
