@@ -1,6 +1,5 @@
 /* eslint-disable */
 import * as d3 from 'd3';
-import * as nn from './nn';
 import { HeatMap } from './heatmap';
 import {
   State,
@@ -11,20 +10,16 @@ import {
   Problem
 } from './state';
 import { Example2D, shuffle } from './dataset';
-import { AppendingLineChart } from './linechart';
 import 'seedrandom';
 import { RandomForestClassifier } from 'ml-random-forest';
 import './styles.css';
 import 'material-design-lite';
 import 'material-design-lite/dist/material.indigo-blue.min.css';
-import './analytics';
-
-let mainWidth;
 
 const NUM_SAMPLES_CLASSIFY = 300;
 const NUM_SAMPLES_REGRESS = 1200;
 // # of points per direction.
-const DENSITY = 50;
+const DENSITY = 40;
 
 interface InputFeature {
   f: (x: number, y: number) => number;
@@ -51,7 +46,7 @@ let boundary: number[][] = [];
 // Plot the heatmap.
 const xDomain: [number, number] = [-6, 6];
 const heatMap = new HeatMap(
-  500,
+  400,
   DENSITY,
   xDomain,
   xDomain,
@@ -70,11 +65,6 @@ let trainData: Example2D[] = [];
 let testData: Example2D[] = [];
 let lossTrain = 0;
 let lossTest = 0;
-// Line chart showing train & test errors
-const lineChart = new AppendingLineChart(
-  d3.select("#linechart"),
-  ["#777", "black"]
-);
 
 function train() {
   // RF implementation does not accept negative label
@@ -83,36 +73,28 @@ function train() {
     .domain([-1, 1])
     .range([0, 1]);
 
-  const options = {
-    seed: 20,
-    nEstimators: state.nTrees,
-    maxFeatures: state.maxFeatures,
-    treeOptions: {
-      maxDepth: state.maxDepth
-    }
-  };
-
   const trainingSet = trainData.map((d) => [d.x, d.y]);
   const labels = trainData.map((d) => labelScale(d.label));
 
-  classifier = new RandomForestClassifier(options);
+  classifier = new RandomForestClassifier({
+    seed: 12345678,
+    nEstimators: state.nTrees,
+    maxFeatures: state.maxFeatures,
+    treeOptions: { maxDepth: state.maxDepth }
+  });
   classifier.train(trainingSet, labels);
+
+  lossTrain = getLoss(trainData);
+  lossTest = getLoss(testData);
+
+  updateUI();
 }
 
 function makeGUI() {
-  /* Top controls */
-  d3.select('#reset-button').on('click', () => {
-    reset();
-    userHasInteracted();
-    d3.select('#play-pause-button');
-  });
-
-  d3.select('#play-pause-button').on('click', () => {
-    // Change the button's content.
+  d3.select('#train-button').on('click', () => {
     userHasInteracted();
     train();
     updateUI();
-    // player.playOrPause();
   });
 
   /* Data column */
@@ -235,22 +217,12 @@ function makeGUI() {
   d3.select("label[for='maxDepth'] .value")
     .text(state.maxDepth);
 
-  const batchSize = d3.select('#batchSize').on('input', function () {
-    state.batchSize = this.value;
-    d3.select("label[for='batchSize'] .value")
-      .text(this.value);
-    parametersChanged = true;
-    reset();
-  });
-  batchSize.property('value', state.batchSize);
-  d3.select("label[for='batchSize'] .value")
-    .text(state.batchSize);
-
   const maxFeatures = d3.select('#maxFeatures').on('change', function () {
     state.maxFeatures = +this.value;
     state.serialize();
     userHasInteracted();
     parametersChanged = true;
+    reset();
   });
   maxFeatures.property('value', state.maxFeatures);
 
@@ -282,21 +254,27 @@ function makeGUI() {
     .call(xAxis);
 }
 
+function updateHoverCard(coordinates?: [number, number]) {
+  const hovercard = d3.select('#hovercard');
+
+  d3.select('#svg').on('click', () => {
+    hovercard.select('.value').style('display', 'none');
+  });
+  hovercard.style({
+    left: `${coordinates[0] + 20}px`,
+    top: `${coordinates[1]}px`,
+    display: 'block'
+  });
+}
+
 /**
  * Given a neural network, it asks the network for the output (prediction)
  * of every node in the network using inputs sampled on a square grid.
  * It returns a map where each key is the node ID and the value is a square
  * matrix of the outputs of the network for each input in the grid respectively.
  */
-function updateDecisionBoundary() {
-  const xScale = d3.scale
-    .linear()
-    .domain([0, DENSITY - 1])
-    .range(xDomain);
-  const yScale = d3.scale
-    .linear()
-    .domain([DENSITY - 1, 0])
-    .range(xDomain);
+function updateDecisionBoundary(): void {
+  if (!classifier) return;
 
   let i: number;
   let j: number;
@@ -305,47 +283,50 @@ function updateDecisionBoundary() {
     boundary[i] = new Array(DENSITY);
     for (j = 0; j < DENSITY; j++) {
       // 1 for points inside, and 0 for points outside the circle.
-      const x = xScale(i);
-      const y = yScale(j);
-      boundary[i][j] = classifier.predict([[x, y]])[0];
+      const xScale = d3.scale
+        .linear()
+        .domain([0, DENSITY - 1])
+        .range(xDomain);
+      const yScale = d3.scale
+        .linear()
+        .domain([DENSITY - 1, 0])
+        .range(xDomain);
+
+      boundary[i][j] = classifier.predict([[xScale(i), yScale(j)]])[0];
     }
   }
 }
 
-// function getLoss(network: nn.Node[][], dataPoints: Example2D[]): number {
-//   let loss = 0;
-//   for (let i = 0; i < dataPoints.length; i++) {
-//     const dataPoint = dataPoints[i];
-//     const input = constructInput(dataPoint.x, dataPoint.y);
-//     const output = nn.forwardProp(network, input);
-//     loss += nn.Errors.SQUARE.error(output, dataPoint.label);
-//   }
-//   return loss / dataPoints.length;
-// }
+function getLoss(dataPoints: Example2D[]): number {
+  let loss = 0;
+  for (let i = 0; i < dataPoints.length; i++) {
+    const dataPoint = dataPoints[i];
+    let output = classifier.predict([[dataPoint.x, dataPoint.y]])[0];
 
-function updateUI(firstStep = false) {
+    const scale = d3.scale
+      .linear()
+      .domain([0, 1])
+      .range([-1, 1]);
+    
+    output = scale(output);
+
+    loss += 0.5 * Math.pow(output - dataPoint.label, 2);
+  }
+  return loss / dataPoints.length;
+}
+
+function updateUI() {
   // Get the decision boundary of the network.
   updateDecisionBoundary();
   heatMap.updateBackground(boundary, state.discretize);
 
-  // function zeroPad(n: number): string {
-  //   const pad = '000000';
-  //   return (pad + n).slice(-pad.length);
-  // }
+  function humanReadable(n: number): string {
+    return n.toFixed(3);
+  }
 
-  // function addCommas(s: string): string {
-  //   return s.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  // }
-
-  // function humanReadable(n: number): string {
-  //   return n.toFixed(3);
-  // }
-
-  // // Update loss and iteration number.
-  // d3.select('#loss-train').text(humanReadable(lossTrain));
-  // d3.select('#loss-test').text(humanReadable(lossTest));
-  // d3.select('#iter-number').text(addCommas(zeroPad(iter)));
-  // lineChart.addDataPoint([lossTrain, lossTest]);
+  // Update loss and iteration number.
+  d3.select('#loss-train').text(humanReadable(lossTrain));
+  d3.select('#loss-test').text(humanReadable(lossTest));
 }
 
 // function constructInputIds(): string[] {
@@ -369,7 +350,8 @@ function updateUI(firstStep = false) {
 
 /* Reset the learning progress */
 function reset(onStartup = false) {
-  // lineChart.reset();
+  lossTest = 0;
+  lossTrain = 0;
   state.serialize();
   if (!onStartup) {
     userHasInteracted();
@@ -377,10 +359,10 @@ function reset(onStartup = false) {
   classifier = null;
   boundary = [];
 
-  // lossTrain = getLoss(network, trainData);
-  // lossTest = getLoss(network, testData);
-  heatMap.clearBackground();
-  // updateUI(true);
+  // lossTrain = getLoss(trainData);
+  // lossTest = getLoss(testData);
+  // heatMap.clearBackground();
+  updateUI();
 }
 
 function drawDatasetThumbnails() {
@@ -462,18 +444,6 @@ function userHasInteracted() {
   if (state.tutorial != null && state.tutorial !== '') {
     page = `/v/tutorials/${state.tutorial}`;
   }
-  ga('set', 'page', page);
-  ga('send', 'pageview', { sessionControl: 'start' });
-}
-
-function simulationStarted() {
-  ga('send', {
-    hitType: 'event',
-    eventCategory: 'Starting Simulation',
-    eventAction: parametersChanged ? 'changed' : 'unchanged',
-    eventLabel: state.tutorial == null ? '' : state.tutorial
-  });
-  parametersChanged = false;
 }
 
 drawDatasetThumbnails();

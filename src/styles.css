@@ -67,7 +67,7 @@ body {
   margin-right: auto;
 }
 
-@media (min-width: 1180px) {
+/* @media (min-width: 1180px) {
   .l--page {
     width: 1100px;
   }
@@ -77,7 +77,7 @@ body {
   .l--page {
     width: 1220px;
   }
-}
+} */
 
 /* Buttons */
 
@@ -247,8 +247,8 @@ header h1 .optional {
   display: -ms-flexbox;
   display: -webkit-flex;
   display: flex;
-  -webkit-justify-content: space-betweenspace-between;
-  justify-content: center;
+  -webkit-justify-content: space-evenly;
+  justify-content: space-evenly;
 }
 
 #top-controls .timeline-controls {
@@ -303,11 +303,11 @@ header h1 .optional {
   font-weight: 300;
 }
 
-#top-controls .control .select {
+.select {
   position: relative;
 }
 
-#top-controls .control select {
+select {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
@@ -323,11 +323,11 @@ header h1 .optional {
   outline: none;
 }
 
-#top-controls .control select:focus {
+select:focus {
   border-bottom-color: #183d4e;
 }
 
-#top-controls .control .select::after {
+.select::after {
   class: 'material-icons';
   content: 'arrow_drop_down';
   color: #999;
@@ -376,7 +376,7 @@ header h1 .optional {
   display: -webkit-flex;
   display: flex;
   -webkit-justify-content: space-between;
-  justify-content: center;
+  justify-content: space-between;
   margin-top: 30px;
   margin-bottom: 50px;
   padding-top: 2px;
@@ -387,10 +387,6 @@ header h1 .optional {
   #main-part {
     margin-top: 50px;
   }
-}
-
-#main-part .column {
-  padding: 20px;
 }
 
 #main-part h4 {
@@ -407,6 +403,7 @@ header h1 .optional {
   padding-bottom: 8px;
   margin: 0;
   line-height: 1.4em;
+  justify-content: center;
 }
 
 #main-part p,
@@ -458,8 +455,7 @@ g.column rect {
 
 #heatmap {
   position: relative;
-  float: left;
-  margin-top: 10px;
+  margin: 10px 0;
 }
 
 #heatmap .tick line {
@@ -548,6 +544,10 @@ g.column rect {
 
 #main-part .data.column p.slider {
   margin: 0 -25px 20px;
+}
+
+#main-part .data.column p.select {
+  margin: 0 -10px 20px 0;
 }
 
 #main-part .basic-button {
@@ -964,36 +964,12 @@ footer .links a:hover {
   background-color: #183d4e;
 }
 
-/* Slider */
-
-#main-part .mdl-slider.is-upgraded {
-  color: #183d4e;
+.mdl-spinner {
+  margin-top: 25px;
+  margin-right: 0;
+  visibility: hidden;
 }
 
-#main-part .mdl-slider__background-lower {
-  background-color: #183d4e;
-}
-
-#main-part .mdl-slider.is-upgraded::-webkit-slider-thumb {
-  background-color: #183d4e;
-}
-
-#main-part .mdl-slider.is-upgraded::-moz-range-thumb {
-  background-color: #183d4e;
-}
-
-#main-part .mdl-slider.is-upgraded::-ms-thumb {
-  background-color: #183d4e;
-}
-
-#main-part .mdl-slider.is-upgraded.is-lowest-value::-webkit-slider-thumb {
-  border-color: #183d4e;
-}
-
-#main-part .mdl-slider.is-upgraded.is-lowest-value::-moz-range-thumb {
-  border-color: #183d4e;
-}
-/* Keep grey focus circle for non-start values */
-#main-part .mdl-slider.is-upgraded:focus:not(:active)::-webkit-slider-thumb {
-  box-shadow: 0 0 0 10px rgba(0, 0, 0, 0.12);
+body.busy-cursor {
+  cursor: progress;
 }

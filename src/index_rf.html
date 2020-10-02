@@ -40,48 +40,10 @@ limitations under the License.
 </head>
 
 <body>
-  <!-- Top Controls -->
-  <div id="top-controls">
-    <div class="container l--page">
-      <div class="timeline-controls">
-        <button class="mdl-button mdl-js-button mdl-button--fab mdl-button--colored ui-playButton" id="play-pause-button" title="Run/Pause">
-          <i class="material-icons">play_arrow</i>
-        </button>
-      </div>
-      <div class="control ui-maxFeatures">
-        <label for="maxFeatures">Max features</label>
-        <div class="select">
-          <select id="maxFeatures">
-            <option value="1">1</option>
-            <option value="2">2</option>
-          </select>
-        </div>
-      </div>
-      <div class="control ui-problem">
-        <label for="problem">Problem type</label>
-        <div class="select">
-          <select id="problem">
-            <option value="classification">Classification</option>
-            <option value="regression">Regression</option>
-          </select>
-        </div>
-      </div>
-      <div class="control ui-ntrees">
-        <label for="nTrees"># of trees:&nbsp;&nbsp;<span class="value">XX</span></label>
-        <p class="slider">
-          <input id="nTrees" class="mdl-slider mdl-js-slider" type="range"
-          min="0" max="200" value="100" step="10">
-        </p>
-      </div>
-      <div class="control ui-maxDepth">
-        <label for="maxDepth">Max tree depth:&nbsp;&nbsp;<span class="value">XX</span></label>
-        <p class="slider">
-          <input id="maxDepth" class="mdl-slider mdl-js-slider" type="range"
-          min="1" max="10" value="5" step="1">
-        </p>
-      </div>
-    </div>
-  </div>
+  <!-- Header -->
+  <header>
+    <h1 class="l--page">Tinker With a <b>Random Forest</b> <span class="optional">Right Here </span>in Your Browser.</h1>
+  </header>
 
   <!-- Main Part -->
   <div id="main-part" class="l--page">
@@ -126,12 +88,6 @@ limitations under the License.
             <input class="mdl-slider mdl-js-slider" type="range" id="noise" min="0" max="50" step="5">
           </p>
         </div>
-        <div class="ui-batchSize">
-          <label for="batchSize">Batch size:&nbsp;&nbsp;<span class="value">XX</span></label>
-          <p class="slider">
-            <input class="mdl-slider mdl-js-slider" type="range" id="batchSize" min="1" max="30" step="1">
-          </p>
-        </div>
         <button class="basic-button" id="data-regen-button" title="Regenerate data">
           Regenerate
         </button>
@@ -140,32 +96,29 @@ limitations under the License.
 
     <div class="column heatmap">
       <h4><span>Output</span></h4>
-      <div id="heatmap"></div>
-    </div>
-
-    <!-- Output Column -->
-    <div class="column output">
-      <h4>
-        <span>Parameters</span>
-      </h4>
       <div class="metrics">
         <div class="output-stats ui-percTrainData">
-          <span>Test loss</span>
-          <div class="value" id="loss-test"></div>
+          <span>Test loss:&nbsp;&nbsp;</span><span class="value" id="loss-test"></span>
         </div>
         <div class="output-stats train">
-          <span>Training loss</span>
-          <div class="value" id="loss-train"></div>
+          <span>Training loss</span>&nbsp;&nbsp;<span class="value" id="loss-train"></span>
         </div>
-        <div id="linechart"></div>
       </div>
-      <div style="float:left;margin-top:20px">
-        <div style="display:flex; align-items:center;">
-
-          <!-- Gradient color scale -->
-          <div class="label" style="width:105px; margin-right: 10px">
-            Colors shows data, neuron and weight values.
-          </div>
+      <div>
+        <div style="display:flex;">
+          <label class="ui-showTestData mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="show-test-data">
+            <input type="checkbox" id="show-test-data" class="mdl-checkbox__input" checked>
+            <span class="mdl-checkbox__label label">Show test data</span>
+          </label>
+        </div>
+      </div>
+      <div id="heatmap""></div>
+      <div style="display: flex; align-items:center;">
+        <!-- Gradient color scale -->
+        <div class="label" style="width:105px; margin-right: 10px">
+          Colors shows data, neuron and weight values.
+        </div>
+        <span>
           <svg width="150" height="30" id="colormap">
             <defs>
               <linearGradient id="gradient" x1="0%" y1="100%" x2="100%" y2="100%">
@@ -178,21 +131,59 @@ limitations under the License.
               <rect width="144" height="10" style="fill: url('#gradient');"></rect>
             </g>
           </svg>
-        </div>
-        <br/>
-        <div style="display:flex;">
-          <label class="ui-showTestData mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="show-test-data">
-            <input type="checkbox" id="show-test-data" class="mdl-checkbox__input" checked>
-            <span class="mdl-checkbox__label label">Show test data</span>
-          </label>
-          <label class="ui-discretize mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="discretize">
-            <input type="checkbox" id="discretize" class="mdl-checkbox__input" checked>
-            <span class="mdl-checkbox__label label">Discretize output</span>
-          </label>
-        </div>
+        </span>
+      </div>
+      <div id="hovercard">
+        <div style="font-size:10px">Click anywhere to edit.</div>
+        <div><span class="type">Weight/Bias</span> is <span class="value">0.2</span></div>
       </div>
     </div>
 
+    <div class="column data">
+      <h4><span>Parameters</span></h4>
+
+      <div class="ui-maxFeatures">
+        <label for="maxFeatures">Max features</label>
+        <p class="select">
+          <select id="maxFeatures">
+            <option value="1">1</option>
+            <option value="2">2</option>
+          </select>
+        </p>
+      </div>
+
+      <div class="ui-problem">
+        <label for="problem">Problem type</label>
+        <p class="select">
+          <select id="problem">
+            <option value="classification">Classification</option>
+            <option value="regression">Regression</option>
+          </select>
+        </p>
+      </div>
+
+      <div class="ui-ntrees">
+        <label for="nTrees"># of trees:&nbsp;&nbsp;<span class="value">XX</span></label>
+        <p class="slider">
+          <input id="nTrees" class="mdl-slider mdl-js-slider" type="range"
+          min="0" max="200" value="100" step="10">
+        </p>
+      </div>
+
+      <div class="ui-maxDepth">
+        <label for="maxDepth">Max tree depth:&nbsp;&nbsp;<span class="value">XX</span></label>
+        <p class="slider">
+          <input id="maxDepth" class="mdl-slider mdl-js-slider" type="range"
+          min="1" max="10" value="5" step="1">
+        </p>
+      </div>
+
+      <button class="basic-button" id="train-button" title="Train & classify data" style="background: #183d4e; color: white;">
+        Train
+      </button>
+
+      <div id="train-loading-spinner" class="mdl-spinner mdl-spinner--single-color mdl-js-spinner is-active"></div>
+    </div>
   </div>
 
   <!-- Footer -->

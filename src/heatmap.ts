@@ -180,6 +180,11 @@ export class HeatMap {
   }
 
   updateBackground(data: number[][], discretize: boolean): void {
+    if (data.length === 0) {
+      this.clearBackground();
+      return;
+    }
+
     const flattenedData = data.reduce((acc, val) => acc.concat(val), []);
     const labelScale = d3.scale
       .linear()
@@ -234,7 +239,7 @@ export class HeatMap {
     selection
       .enter()
       .append('circle')
-      .attr('r', 3);
+      .attr('r', 4);
 
     // Update points to be in the correct position.
     selection
