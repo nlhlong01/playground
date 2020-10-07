@@ -128,6 +128,7 @@ export class State {
     { name: 'problem', type: Type.OBJECT, keyMap: problems },
     { name: 'initZero', type: Type.BOOLEAN },
     { name: 'hideText', type: Type.BOOLEAN },
+    { name: 'nSamples', type: Type.NUMBER },
     { name: 'nTrees', type: Type.NUMBER },
     { name: 'maxDepth', type: Type.NUMBER },
     { name: 'maxFeatures', type: Type.NUMBER },
@@ -193,6 +194,8 @@ export class State {
   regDataset: dataset.DataGenerator = dataset.regressPlane;
 
   seed: string;
+
+  nSamples = 0.5;
 
   nTrees = 100;
 

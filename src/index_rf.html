@@ -36,7 +36,7 @@ limitations under the License.
 
   <meta name="author" content="Daniel Smilkov and Shan Carter">
   <title>A Neural Network Playground</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto|Material+Icons" type="text/css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto" type="text/css">
 </head>
 
 <body>
@@ -162,8 +162,16 @@ limitations under the License.
         </p>
       </div>
 
+      <div class="ui-nsample">
+        <label for="nSamples">Samples:&nbsp;&nbsp;<span class="value">XX</span></label>
+        <p class="slider">
+          <input id="nSamples" class="mdl-slider mdl-js-slider" type="range"
+          min="10" max="500" value="300" step="10">
+        </p>
+      </div>
+
       <div class="ui-ntrees">
-        <label for="nTrees"># of trees:&nbsp;&nbsp;<span class="value">XX</span></label>
+        <label for="nTrees">Trees:&nbsp;&nbsp;<span class="value">XX</span></label>
         <p class="slider">
           <input id="nTrees" class="mdl-slider mdl-js-slider" type="range"
           min="0" max="200" value="100" step="10">
@@ -171,7 +179,7 @@ limitations under the License.
       </div>
 
       <div class="ui-maxDepth">
-        <label for="maxDepth">Max tree depth:&nbsp;&nbsp;<span class="value">XX</span></label>
+        <label for="maxDepth">Tree depth:&nbsp;&nbsp;<span class="value">XX</span></label>
         <p class="slider">
           <input id="maxDepth" class="mdl-slider mdl-js-slider" type="range"
           min="1" max="10" value="5" step="1">

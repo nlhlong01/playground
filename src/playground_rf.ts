@@ -11,15 +11,17 @@ import {
 } from './state';
 import { Example2D, shuffle } from './dataset';
 import 'seedrandom';
-import { RandomForestClassifier } from 'ml-random-forest';
+import {
+  RandomForestClassifier
+} from '../../random-forest/src/RandomForestClassifier';
 import './styles.css';
 import 'material-design-lite';
 import 'material-design-lite/dist/material.indigo-blue.min.css';
 
-const NUM_SAMPLES_CLASSIFY = 300;
+const NUM_SAMPLES_CLASSIFY = 500;
 const NUM_SAMPLES_REGRESS = 1200;
 // # of points per direction.
-const DENSITY = 40;
+const DENSITY = 50;
 
 interface InputFeature {
   f: (x: number, y: number) => number;
@@ -77,10 +79,12 @@ function train() {
   const labels = trainData.map((d) => labelScale(d.label));
 
   classifier = new RandomForestClassifier({
-    seed: 12345678,
+    nSamples: state.nSamples / NUM_SAMPLES_CLASSIFY,
     nEstimators: state.nTrees,
-    maxFeatures: state.maxFeatures,
-    treeOptions: { maxDepth: state.maxDepth }
+    maxFeatures: state.maxFeatures / 2,
+    treeOptions: { maxDepth: state.maxDepth },
+    useSampleBagging: true,
+    replacement: true
   });
   classifier.train(trainingSet, labels);
 
@@ -195,7 +199,7 @@ function makeGUI() {
 
   // Configure the number of trees
   const nTrees = d3.select('#nTrees').on('input', function () {
-    state.nTrees = this.value;
+    state.nTrees = +this.value;
     d3.select("label[for='nTrees'] .value")
       .text(this.value);
     parametersChanged = true;
@@ -205,9 +209,9 @@ function makeGUI() {
   d3.select("label[for='nTrees'] .value")
     .text(state.nTrees);
 
-  // Configure the number of trees
+  // Configure the max depth of each tree
   const maxDepth = d3.select('#maxDepth').on('input', function () {
-    state.maxDepth = this.value;
+    state.maxDepth = +this.value;
     d3.select("label[for='maxDepth'] .value")
       .text(this.value);
     parametersChanged = true;
@@ -216,6 +220,18 @@ function makeGUI() {
   maxDepth.property('value', state.maxDepth);
   d3.select("label[for='maxDepth'] .value")
     .text(state.maxDepth);
+
+  // Configure the number of samples to train each tree
+  const nSamples = d3.select('#nSamples').on('input', function () {
+    state.nSamples = +this.value;
+    d3.select("label[for='nSamples'] .value")
+      .text(this.value);
+    parametersChanged = true;
+    reset();
+  });
+  nSamples.property('value', state.nSamples);
+  d3.select("label[for='nSamples'] .value")
+    .text(state.nSamples);
 
   const maxFeatures = d3.select('#maxFeatures').on('change', function () {
     state.maxFeatures = +this.value;
