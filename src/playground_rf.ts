@@ -21,7 +21,7 @@ import 'material-design-lite/dist/material.indigo-blue.min.css';
 const NUM_SAMPLES_CLASSIFY = 500;
 const NUM_SAMPLES_REGRESS = 1200;
 // # of points per direction.
-const DENSITY = 50;
+const DENSITY = 40;
 
 interface InputFeature {
   f: (x: number, y: number) => number;
@@ -48,13 +48,32 @@ let boundary: number[][] = [];
 // Plot the heatmap.
 const xDomain: [number, number] = [-6, 6];
 const heatMap = new HeatMap(
-  400,
+  300,
   DENSITY,
   xDomain,
   xDomain,
   d3.select('#heatmap'),
   { showAxes: true }
 );
+
+const treeHeatMaps = [];
+
+for (let i = 0; i < 20; ++i) {
+  const heatmapContainer = d3.select('.trees-container')
+    .append('div')
+    .classed('mdl-cell mdl-cell--3-col', true);
+  
+  const treeHeatMap = new HeatMap(
+    40,
+    DENSITY,
+    xDomain,
+    xDomain,
+    heatmapContainer,
+    { showAxes: false }
+  );
+
+  treeHeatMaps.push(treeHeatMap);
+}
 
 const colorScale = d3.scale
   .linear<string, number>()
@@ -83,8 +102,9 @@ function train() {
     nEstimators: state.nTrees,
     maxFeatures: state.maxFeatures / 2,
     treeOptions: { maxDepth: state.maxDepth },
+    selectionMethod: 'mean',
     useSampleBagging: true,
-    replacement: true
+    replacement: false
   });
   classifier.train(trainingSet, labels);
 
@@ -99,6 +119,7 @@ function makeGUI() {
     userHasInteracted();
     train();
     updateUI();
+    console.log(classifier.toJSON());
   });
 
   /* Data column */
@@ -335,6 +356,10 @@ function updateUI() {
   // Get the decision boundary of the network.
   updateDecisionBoundary();
   heatMap.updateBackground(boundary, state.discretize);
+  treeHeatMaps.forEach((heatMap) => {
+    heatMap.updateBackground(boundary, state.discretize);
+  });
+  // miniHeatmap.updateBackground(boundary, state.discretize);
 
   function humanReadable(n: number): string {
     return n.toFixed(3);

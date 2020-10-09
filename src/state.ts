@@ -195,7 +195,7 @@ export class State {
 
   seed: string;
 
-  nSamples = 0.5;
+  nSamples = 300;
 
   nTrees = 100;
 

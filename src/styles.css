@@ -329,7 +329,6 @@ select:focus {
 
 .select::after {
   class: 'material-icons';
-  content: 'arrow_drop_down';
   color: #999;
   font-family: 'Material Icons';
   font-weight: normal;
@@ -407,8 +406,8 @@ select:focus {
 }
 
 #main-part p,
-#main-part .column .label,
-#main-part .column label {
+#main-part .label,
+#main-part label {
   font-weight: 300;
   line-height: 1.38em;
   margin: 0;
@@ -486,16 +485,16 @@ g.column rect {
   align-items: center;
 }
 
-.data.column {
+.side-column {
   width: 10%;
 }
 
-.data.column .dataset-list {
+.side-column .dataset-list {
   margin: 20px 0 10px;
   overflow: hidden;
 }
 
-.data.column .dataset {
+.side-column .dataset {
   position: relative;
   float: left;
   width: 34px;
@@ -503,11 +502,11 @@ g.column rect {
   margin: 0 14px 14px 0;
 }
 
-.data.column .dataset:nth-of-type(2n) {
+.side-column .dataset:nth-of-type(2n) {
   margin-right: 0;
 }
 
-.data.column .data-thumbnail {
+.side-column .data-thumbnail {
   cursor: pointer;
   width: 100%;
   height: 100%;
@@ -516,38 +515,42 @@ g.column rect {
   border-radius: 3px;
 }
 
-/*.data.column .dataset:first-of-type {
+/*.side-column .dataset:first-of-type {
   margin-top: 8px;
 }
 
-.data.column .dataset:last-of-type {
+.side-column .dataset:last-of-type {
   margin-bottom: 20px;
 }*/
 
-.data.column .data-thumbnail:hover {
+.side-column .data-thumbnail:hover {
   border: 2px solid #999;
 }
 
-.data.column .data-thumbnail.selected {
+.side-column .data-thumbnail.selected {
   border: 2px solid black;
   opacity: 1;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.2);
   background-color: white;
 }
 
-#main-part .data.column .dataset .label {
+#main-part .side-column .dataset .label {
   position: absolute;
   left: 48px;
   top: calc(50% - 9px);
   display: none;
 }
 
-#main-part .data.column p.slider {
+#main-part .side-column p.slider {
   margin: 0 -25px 20px;
 }
 
-#main-part .data.column p.select {
+#main-part .side-column p.select {
   margin: 0 -10px 20px 0;
+}
+
+#main-part .side-column .mdl-checkbox {
+  margin: 10px 0;
 }
 
 #main-part .basic-button {
@@ -787,6 +790,15 @@ g.column rect {
   margin-bottom: 5px;
 }
 
+/* Main column */
+.main-column {
+  width: 60%;
+}
+
+.main-column .mdl-grid {
+  padding: 0;
+}
+
 /* Output column */
 
 .output.column {
@@ -968,8 +980,4 @@ footer .links a:hover {
   margin-top: 25px;
   margin-right: 0;
   visibility: hidden;
-}
-
-body.busy-cursor {
-  cursor: progress;
 }

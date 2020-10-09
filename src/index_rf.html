@@ -48,7 +48,7 @@ limitations under the License.
   <!-- Main Part -->
   <div id="main-part" class="l--page">
     <!--  Data Column-->
-    <div class="column data">
+    <div class="side-column">
       <h4>
         <span>Data</span>
       </h4>
@@ -94,7 +94,7 @@ limitations under the License.
       </div>
     </div>
 
-    <div class="column heatmap">
+    <div class="main-column">
       <h4><span>Output</span></h4>
       <div class="metrics">
         <div class="output-stats ui-percTrainData">
@@ -104,15 +104,18 @@ limitations under the License.
           <span>Training loss</span>&nbsp;&nbsp;<span class="value" id="loss-train"></span>
         </div>
       </div>
-      <div>
-        <div style="display:flex;">
-          <label class="ui-showTestData mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="show-test-data">
-            <input type="checkbox" id="show-test-data" class="mdl-checkbox__input" checked>
-            <span class="mdl-checkbox__label label">Show test data</span>
-          </label>
+      <div style="display: flex;">
+        <div>
+          <div>Predictions:</div>
+          <div id="heatmap""></div>
+        </div>
+        <div>
+          <div style="display: block;">Predictions of the first 25 trees:</div>
+          <div class="trees-container mdl-grid">
+          </div>
         </div>
       </div>
-      <div id="heatmap""></div>
+
       <div style="display: flex; align-items:center;">
         <!-- Gradient color scale -->
         <div class="label" style="width:105px; margin-right: 10px">
@@ -139,7 +142,7 @@ limitations under the License.
       </div>
     </div>
 
-    <div class="column data">
+    <div class="side-column">
       <h4><span>Parameters</span></h4>
 
       <div class="ui-maxFeatures">
@@ -186,11 +189,19 @@ limitations under the License.
         </p>
       </div>
 
+      <label class="ui-showTestData mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="show-test-data">
+        <input type="checkbox" id="show-test-data" class="mdl-checkbox__input" checked>
+        <span class="mdl-checkbox__label label">Show test data</span>
+      </label>
+
+      <label class="ui-discretize mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="discretize">
+        <input type="checkbox" id="discretize" class="mdl-checkbox__input" checked>
+        <span class="mdl-checkbox__label label">Discretize output</span>
+      </label>
+
       <button class="basic-button" id="train-button" title="Train & classify data" style="background: #183d4e; color: white;">
         Train
       </button>
-
-      <div id="train-loading-spinner" class="mdl-spinner mdl-spinner--single-color mdl-js-spinner is-active"></div>
     </div>
   </div>
 
