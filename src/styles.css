@@ -358,7 +358,6 @@ select:focus {
   cursor: default;
   border-radius: 5px;
   left: 240px;
-  width: 150px;
   top: -20px;
 }
 
@@ -452,25 +451,25 @@ g.column rect {
   stroke: none;
 }
 
-#heatmap {
+#main-heatmap {
   position: relative;
   margin: 10px 0;
 }
 
-#heatmap .tick line {
+#main-heatmap .tick line {
   stroke: #ddd;
 }
 
-#heatmap .tick text {
+#main-heatmap .tick text {
   fill: #bbb;
   dominant-baseline: auto;
 }
 
-#heatmap .tick:nth-child(7) text {
+#main-heatmap .tick:nth-child(7) text {
   fill: #333;
 }
 
-#heatmap .tick:nth-child(7) line {
+#main-heatmap .tick:nth-child(7) line {
   stroke: #999;
 }
 

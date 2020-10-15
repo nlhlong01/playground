@@ -96,6 +96,7 @@ limitations under the License.
 
     <div class="main-column">
       <h4><span>Output</span></h4>
+
       <div class="metrics">
         <div class="output-stats ui-percTrainData">
           <span>Test loss:&nbsp;&nbsp;</span><span class="value" id="loss-test"></span>
@@ -104,14 +105,21 @@ limitations under the License.
           <span>Training loss</span>&nbsp;&nbsp;<span class="value" id="loss-train"></span>
         </div>
       </div>
+
       <div style="display: flex;">
         <div>
           <div>Predictions:</div>
-          <div id="heatmap""></div>
+          <div id="main-heatmap"">
+            <div id="hovercard" class="ui-nvotes">
+              <div># of votes</div>
+              <div>class&nbsp;-1:&nbsp;&nbsp;<span id="first-class" class="value"></span></div>
+              <div>class&nbsp;&nbsp;1:&nbsp;&nbsp;<span id="second-class" class="value"></span></div>
+            </div>
+          </div>
         </div>
         <div>
           <div style="display: block;">Predictions of the first 25 trees:</div>
-          <div class="trees-container mdl-grid">
+          <div class="tree-heatmaps-container mdl-grid">
           </div>
         </div>
       </div>
@@ -135,10 +143,6 @@ limitations under the License.
             </g>
           </svg>
         </span>
-      </div>
-      <div id="hovercard">
-        <div style="font-size:10px">Click anywhere to edit.</div>
-        <div><span class="type">Weight/Bias</span> is <span class="value">0.2</span></div>
       </div>
     </div>
 

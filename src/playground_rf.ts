@@ -22,45 +22,37 @@ const NUM_SAMPLES_CLASSIFY = 500;
 const NUM_SAMPLES_REGRESS = 1200;
 // # of points per direction.
 const DENSITY = 40;
+// TODO: TREE_DENSITY should be 10
+const TREE_DENSITY = 40;
+const NUM_VISIBLE_TREES = 20;
 
 interface InputFeature {
   f: (x: number, y: number) => number;
   label?: string;
 }
 
-// Input feature functions.
-const INPUTS: { [name: string]: InputFeature } = {
-  x: { f: (x, y) => x, label: 'X_1' },
-  y: { f: (x, y) => y, label: 'X_2' },
-  xSquared: { f: (x, y) => x * x, label: 'X_1^2' },
-  ySquared: { f: (x, y) => y * y, label: 'X_2^2' },
-  xTimesY: { f: (x, y) => x * y, label: 'X_1X_2' },
-  sinX: { f: (x, y) => Math.sin(x), label: 'sin(X_1)' },
-  sinY: { f: (x, y) => Math.sin(y), label: 'sin(X_2)' }
-};
-
 const state = State.deserializeState();
 
-// TODO: Doublecheck this comment
-// All points in the heatmap background
-let boundary: number[][] = [];
+let mainBoundary: number[][];
+let treeBoundaries: number[][][];
 
-// Plot the heatmap.
+// Plot the main heatmap.
 const xDomain: [number, number] = [-6, 6];
-const heatMap = new HeatMap(
+const mainHeatMap = new HeatMap(
   300,
   DENSITY,
   xDomain,
   xDomain,
-  d3.select('#heatmap'),
+  d3.select('#main-heatmap'),
   { showAxes: true }
 );
 
+// Plot the tree heatmaps.
 const treeHeatMaps = [];
-
-for (let i = 0; i < 20; ++i) {
-  const heatmapContainer = d3.select('.trees-container')
+for (let i = 0; i < NUM_VISIBLE_TREES; ++i) {
+  const treeHeatmapsContainer = d3.select('.tree-heatmaps-container')
     .append('div')
+    .attr('id', `tree-heatmap-${i}`)
     .classed('mdl-cell mdl-cell--3-col', true);
   
   const treeHeatMap = new HeatMap(
@@ -68,8 +60,8 @@ for (let i = 0; i < 20; ++i) {
     DENSITY,
     xDomain,
     xDomain,
-    heatmapContainer,
-    { showAxes: false }
+    treeHeatmapsContainer,
+    { showAxes: false, noSvg: true },
   );
 
   treeHeatMaps.push(treeHeatMap);
@@ -81,45 +73,17 @@ const colorScale = d3.scale
   .range(['#f59322', '#e8eaeb', '#0877bd'])
   .clamp(true);
 
-let classifier: RandomForestClassifier = null;
+let classifier: RandomForestClassifier;
 let trainData: Example2D[] = [];
 let testData: Example2D[] = [];
-let lossTrain = 0;
-let lossTest = 0;
-
-function train() {
-  // RF implementation does not accept negative label
-  const labelScale = d3.scale
-    .linear()
-    .domain([-1, 1])
-    .range([0, 1]);
-
-  const trainingSet = trainData.map((d) => [d.x, d.y]);
-  const labels = trainData.map((d) => labelScale(d.label));
-
-  classifier = new RandomForestClassifier({
-    nSamples: state.nSamples / NUM_SAMPLES_CLASSIFY,
-    nEstimators: state.nTrees,
-    maxFeatures: state.maxFeatures / 2,
-    treeOptions: { maxDepth: state.maxDepth },
-    selectionMethod: 'mean',
-    useSampleBagging: true,
-    replacement: false
-  });
-  classifier.train(trainingSet, labels);
-
-  lossTrain = getLoss(trainData);
-  lossTest = getLoss(testData);
-
-  updateUI();
-}
+let lossTrain: number;
+let lossTest: number;
 
 function makeGUI() {
   d3.select('#train-button').on('click', () => {
     userHasInteracted();
     train();
     updateUI();
-    console.log(classifier.toJSON());
   });
 
   /* Data column */
@@ -165,12 +129,34 @@ function makeGUI() {
   d3.select(`canvas[data-regDataset=${regDatasetKey}]`)
     .classed('selected',true);
 
+  /* Main Column */
+  for (let i = 0; i < treeHeatMaps.length; i++) {
+    d3.select(`#tree-heatmap-${i} canvas`)
+      .style('border', '2px solid black')
+      .on('mouseenter', () => {
+        mainHeatMap.updateBackground(treeBoundaries[i], state.discretize);
+      })
+      .on('mouseleave', () => {
+        mainHeatMap.updateBackground(mainBoundary, state.discretize);
+      });
+  }
+  treeHeatMaps.forEach((heatMap, index) => {
+    d3.select(`#tree-heatmap-${index} canvas`)
+      .style('border', '2px solid black')
+      .on('mouseenter', () => {
+        mainHeatMap.updateBackground(heatMap.getBoundary(), state.discretize);
+      })
+      .on('mouseleave', () => {
+        mainHeatMap.updateBackground(mainBoundary, state.discretize);
+      });
+  });
+
   /* Output Column */
   const showTestData = d3.select('#show-test-data').on('change', function () {
     state.showTestData = this.checked;
     state.serialize();
     userHasInteracted();
-    heatMap.updateTestPoints(state.showTestData ? testData : []);
+    mainHeatMap.updateTestPoints(state.showTestData ? testData : []);
   });
 
   // Check/uncheck the checkbox according to the current state.
@@ -180,7 +166,7 @@ function makeGUI() {
     state.discretize = this.checked;
     state.serialize();
     userHasInteracted();
-    updateUI();
+    mainHeatMap.updateBackground(mainBoundary, state.discretize);
   });
 
   // Check/uncheck the checbox according to the current state.
@@ -291,17 +277,17 @@ function makeGUI() {
     .call(xAxis);
 }
 
-function updateHoverCard(coordinates?: [number, number]) {
-  const hovercard = d3.select('#hovercard');
+function train() {
+  // RF implementation does not accept negative labels
+  const trainingSet = trainData.map((d) => [d.x, d.y]);
+  const labels = trainData.map((d) => d.label === -1 ? 0 : d.label);
 
-  d3.select('#svg').on('click', () => {
-    hovercard.select('.value').style('display', 'none');
-  });
-  hovercard.style({
-    left: `${coordinates[0] + 20}px`,
-    top: `${coordinates[1]}px`,
-    display: 'block'
-  });
+  classifier.train(trainingSet, labels);
+
+  lossTrain = getLoss(trainData);
+  lossTest = getLoss(testData);
+
+  updateUI();
 }
 
 /**
@@ -310,26 +296,36 @@ function updateHoverCard(coordinates?: [number, number]) {
  * It returns a map where each key is the node ID and the value is a square
  * matrix of the outputs of the network for each input in the grid respectively.
  */
-function updateDecisionBoundary(): void {
-  if (!classifier) return;
-
+function updateDecisionBoundary(firstTime = false): void {
   let i: number;
   let j: number;
+  let k: number;
 
-  for (i = 0; i < DENSITY; i++) {
-    boundary[i] = new Array(DENSITY);
-    for (j = 0; j < DENSITY; j++) {
-      // 1 for points inside, and 0 for points outside the circle.
-      const xScale = d3.scale
-        .linear()
-        .domain([0, DENSITY - 1])
-        .range(xDomain);
-      const yScale = d3.scale
-        .linear()
-        .domain([DENSITY - 1, 0])
-        .range(xDomain);
-
-      boundary[i][j] = classifier.predict([[xScale(i), yScale(j)]])[0];
+  for (k = 0; k < NUM_VISIBLE_TREES; k++) {
+    treeBoundaries[k] = new Array(DENSITY);
+    for (i = 0; i < DENSITY; i++) {
+      mainBoundary[i] = new Array(DENSITY);
+      treeBoundaries[k][i] = new Array(DENSITY);
+      for (j = 0; j < DENSITY; j++) {
+        // 1 for points inside, and 0 for points outside the circle.
+        const xScale = d3.scale
+          .linear()
+          .domain([0, DENSITY - 1])
+          .range(xDomain);
+        const yScale = d3.scale
+          .linear()
+          .domain([DENSITY - 1, 0])
+          .range(xDomain);
+        
+        const x = xScale(i);
+        const y = yScale(j);
+  
+        const predictions = classifier.predict([[x, y]]);
+  
+        mainBoundary[i][j] = predictions.predictions[0];
+  
+        treeBoundaries[k][i][j] = predictions.predictionValues.getColumn(k)[0];
+      }
     }
   }
 }
@@ -338,28 +334,45 @@ function getLoss(dataPoints: Example2D[]): number {
   let loss = 0;
   for (let i = 0; i < dataPoints.length; i++) {
     const dataPoint = dataPoints[i];
-    let output = classifier.predict([[dataPoint.x, dataPoint.y]])[0];
+    const x = dataPoint.x;
+    const y = dataPoint.y;
 
+    // TODO: Choose less confusing var names.
+    const output = classifier.predict([[x, y]]);
+    let predictions = output.predictions[0];
+    const predictionValues = [];
+    for (let i = 0; i < state.nTrees; i++) {
+      let value = output.predictionValues.getColumn(i)[0];
+      value = value === 0 ? -1 : value;
+      predictionValues.push(value);
+    }
+    // Declare this as a global var.
+    d3.select('#hovercard.ui-nvotes #first-class.value')
+      .text(predictionValues.filter((v) => v === -1).length);
+    d3.select('#hovercard.ui-nvotes #second-class.value')
+      .text(predictionValues.filter((v) => v === 1).length);
+
+    // TODO: Get rid of label scales.
     const scale = d3.scale
       .linear()
       .domain([0, 1])
       .range([-1, 1]);
     
-    output = scale(output);
+    predictions = scale(predictions);
 
-    loss += 0.5 * Math.pow(output - dataPoint.label, 2);
+    loss += 0.5 * Math.pow(predictions - dataPoint.label, 2);
   }
   return loss / dataPoints.length;
 }
 
-function updateUI() {
+function updateUI(reset = false) {
   // Get the decision boundary of the network.
-  updateDecisionBoundary();
-  heatMap.updateBackground(boundary, state.discretize);
-  treeHeatMaps.forEach((heatMap) => {
-    heatMap.updateBackground(boundary, state.discretize);
-  });
-  // miniHeatmap.updateBackground(boundary, state.discretize);
+  if (!reset) updateDecisionBoundary(reset);
+
+  mainHeatMap.updateBackground(mainBoundary, state.discretize);
+  for (let i = 0; i < treeHeatMaps.length; i++) {
+    treeHeatMaps[i].updateBackground(treeBoundaries[i], state.discretize);
+  }
 
   function humanReadable(n: number): string {
     return n.toFixed(3);
@@ -368,42 +381,48 @@ function updateUI() {
   // Update loss and iteration number.
   d3.select('#loss-train').text(humanReadable(lossTrain));
   d3.select('#loss-test').text(humanReadable(lossTest));
+
+  const hoverCard = d3.select('#hovercard');
+  d3.selectAll('#main-heatmap svg circle')
+    .on('mouseenter', () => {
+      const container = d3.select('#main-heatmap canvas');
+      const coordinates = d3.mouse(container.node());
+
+      hoverCard.style({
+        left: `${coordinates[0] + 20}px`,
+        top: `${coordinates[1]}px`,
+        display: 'block'
+      });
+    })
+    .on('mouseleave', () => {
+      hoverCard.style('display', 'none');
+    });
 }
-
-// function constructInputIds(): string[] {
-//   const result: string[] = [];
-//   for (const inputName in INPUTS) {
-//     if (state[inputName]) {
-//       result.push(inputName);
-//     }
-//   }
-//   return result;
-// }
-
-// // Create selected inputs.
-// function constructInput(x: number, y: number): number[] {
-//   const input: number[] = [];
-//   for (const inputName in INPUTS) {
-//     if (state[inputName]) input.push(INPUTS[inputName].f(x, y));
-//   }
-//   return input;
-// }
 
 /* Reset the learning progress */
 function reset(onStartup = false) {
+  classifier = new RandomForestClassifier({
+    nSamples: state.nSamples / NUM_SAMPLES_CLASSIFY,
+    nEstimators: state.nTrees,
+    maxFeatures: state.maxFeatures / 2,
+    treeOptions: { maxDepth: state.maxDepth },
+    selectionMethod: 'mean',
+    useSampleBagging: true,
+    replacement: false
+  });
   lossTest = 0;
   lossTrain = 0;
+  mainBoundary = [];
+  treeBoundaries = [];
+  d3.selectAll('#hovercard.ui-nvotes .value')
+    .text('0');
+
   state.serialize();
   if (!onStartup) {
     userHasInteracted();
   }
-  classifier = null;
-  boundary = [];
 
-  // lossTrain = getLoss(trainData);
-  // lossTest = getLoss(testData);
-  // heatMap.clearBackground();
-  updateUI();
+  updateUI(true);
 }
 
 function drawDatasetThumbnails() {
@@ -448,7 +467,7 @@ function generateData(firstTime = false) {
     // Change the seed.
     state.seed = Math.random().toFixed(5);
     state.serialize();
-    // userHasInteracted();
+    userHasInteracted();
   }
 
   Math.seedrandom(state.seed);
@@ -469,8 +488,8 @@ function generateData(firstTime = false) {
   trainData = data.slice(0, splitIndex);
   testData = data.slice(splitIndex);
 
-  heatMap.updatePoints(trainData);
-  heatMap.updateTestPoints(state.showTestData ? testData : []);
+  mainHeatMap.updatePoints(trainData);
+  mainHeatMap.updateTestPoints(state.showTestData ? testData : []);
 }
 
 let firstInteraction = true;
@@ -490,3 +509,4 @@ function userHasInteracted() {
 drawDatasetThumbnails();
 makeGUI();
 generateData(true);
+reset(true);
