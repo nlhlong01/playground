@@ -1,0 +1,111 @@
+{
+  "env": {
+    "browser": true,
+    "es2020": true,
+    "commonjs": true,
+    "jest": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:react/recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:cypress/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "ecmaFeatures": {
+      "jsx": true
+    },
+    "ecmaVersion": 11,
+    "project": "tsconfig.json",
+    "sourceType": "module"
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "@typescript-eslint/tslint",
+    "react",
+    "cypress"
+  ],
+  "rules": {
+    "@typescript-eslint/explicit-module-boundary-types": "off",
+    "@typescript-eslint/indent": ["error", 2],
+    "@typescript-eslint/member-delimiter-style": [
+      "error",
+      {
+        "multiline": {
+          "delimiter": "semi",
+          "requireLast": true
+        },
+        "singleline": {
+          "delimiter": "semi",
+          "requireLast": false
+        }
+      }
+    ],
+    "@typescript-eslint/naming-convention": [
+      "error",
+      {
+        "selector": "variable",
+        "format": ["camelCase", "UPPER_CASE"]
+      }
+    ],
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-unused-expressions": "error",
+    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/no-var-requires": "off",
+    "@typescript-eslint/prefer-namespace-keyword": "error",
+    "@typescript-eslint/semi": ["error", "always"],
+    "@typescript-eslint/type-annotation-spacing": "error",
+    "brace-style": ["error", "1tbs"],
+    "eqeqeq": ["off", "always"],
+    "guard-for-in": "off",
+    "id-blacklist": [
+      "error",
+      "any",
+      "Number",
+      "number",
+      "String",
+      "string",
+      "Boolean",
+      "boolean",
+      "Undefined",
+      "undefined"
+    ],
+    "id-match": "error",
+    "max-len": [
+      "error",
+      {
+        "code": 80
+      }
+    ],
+    "newline-per-chained-call": ["error", { "ignoreChainWithDepth": 2 }],
+    "no-eval": "error",
+    "no-fallthrough": "error",
+    "no-redeclare": "error",
+    "no-trailing-spaces": "error",
+    "no-underscore-dangle": "error",
+    "no-var": "error",
+    "spaced-comment": [
+      "error",
+      "always",
+      {
+        "markers": ["/"]
+      }
+    ],
+    "@typescript-eslint/tslint/config": [
+      "error",
+      {
+        "rules": {
+          "whitespace": [
+            true,
+            "check-branch",
+            "check-decl",
+            "check-operator",
+            "check-separator",
+            "check-type"
+          ]
+        }
+      }
+    ]
+  }
+}
