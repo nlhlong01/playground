@@ -7,10 +7,21 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 module.exports = {
   context: path.resolve(__dirname, 'src'),
-  entry: './playground_rf.ts',
+  entry: {
+    RandomForest: './RandomForestPlayground.ts',
+    DeepLearning: './DeepLearningPlayground.ts'
+  },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './index_rf.html'
+      template: './randomforest.html'
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'randomforest.html',
+      template: './randomforest.html'
+    }),
+    new HtmlWebpackPlugin({
+      filename: 'deeplearning.html',
+      template: './deeplearning.html'
     }),
     new MiniCssExtractPlugin({
       filename: 'bundle.css'
@@ -29,7 +40,7 @@ module.exports = {
     extensions: ['.tsx', '.ts', '.js']
   },
   output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'bundle.js'
+    filename: '[name].bundle.js',
+    path: path.resolve(__dirname, 'dist')
   }
 };

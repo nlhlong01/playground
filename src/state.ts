@@ -128,7 +128,7 @@ export class State {
     { name: 'problem', type: Type.OBJECT, keyMap: problems },
     { name: 'initZero', type: Type.BOOLEAN },
     { name: 'hideText', type: Type.BOOLEAN },
-    { name: 'nSamples', type: Type.NUMBER },
+    { name: 'percSamples', type: Type.NUMBER },
     { name: 'nTrees', type: Type.NUMBER },
     { name: 'maxDepth', type: Type.NUMBER },
     { name: 'maxFeatures', type: Type.NUMBER },
@@ -195,7 +195,7 @@ export class State {
 
   seed: string;
 
-  nSamples = 300;
+  percSamples = 80;
 
   nTrees = 100;
 

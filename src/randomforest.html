@@ -24,18 +24,9 @@ limitations under the License.
   <meta property="og:title" content="Tensorflow — Neural Network Playground"/>
   <meta property="og:description" content="Tinker with a real neural network right here in your browser.">
   <meta property="og:url" content="http://playground.tensorflow.org"/>
-  <meta property="og:image" content="http://playground.tensorflow.org/preview.png"/>
 
-  <meta name="twitter:card" value="summary_large_image">
-  <meta name="twitter:title" content="Tensorflow — Neural Network Playground">
-  <meta name="twitter:description" content="Tinker with a real neural network right here in your browser.">
-  <meta name="twitter:url" content="http://playground.tensorflow.org">
-  <meta name="twitter:image" content="http://playground.tensorflow.org/preview.png">
-  <meta name="twitter:image:width" content="560">
-  <meta name="twitter:image:height" content="295">
-
-  <meta name="author" content="Daniel Smilkov and Shan Carter">
-  <title>A Neural Network Playground</title>
+  <meta name="author" content="Long Nguyen">
+  <title>Random Forest Playground</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto" type="text/css">
 </head>
 
@@ -118,8 +109,8 @@ limitations under the License.
           </div>
         </div>
         <div>
-          <div style="display: block;">Predictions of the first 25 trees:</div>
-          <div class="tree-heatmaps-container mdl-grid">
+          <div style="display: block;">Predictions of the first 20 trees:</div>
+          <div class="estimator-heatmaps-container mdl-grid">
           </div>
         </div>
       </div>
@@ -169,19 +160,19 @@ limitations under the License.
         </p>
       </div>
 
-      <div class="ui-nsample">
-        <label for="nSamples">Samples:&nbsp;&nbsp;<span class="value">XX</span></label>
+      <div class="ui-percSamples">
+        <label for="percSamples">Samples:&nbsp;&nbsp;<span class="value">XX</span>%</label>
         <p class="slider">
-          <input id="nSamples" class="mdl-slider mdl-js-slider" type="range"
-          min="10" max="500" value="300" step="10">
+          <input id="percSamples" class="mdl-slider mdl-js-slider" type="range"
+          min="10" max="100" value="80" step="10">
         </p>
       </div>
 
-      <div class="ui-ntrees">
+      <div class="ui-nTrees">
         <label for="nTrees">Trees:&nbsp;&nbsp;<span class="value">XX</span></label>
         <p class="slider">
           <input id="nTrees" class="mdl-slider mdl-js-slider" type="range"
-          min="0" max="200" value="100" step="10">
+          min="20" max="200" value="100" step="10">
         </p>
       </div>
 

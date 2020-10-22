@@ -187,7 +187,7 @@ export class HeatMap {
   }
 
   updateBackground(data: number[][], discretize: boolean): void {
-    if (!data || !data.length) {
+    if (!data.length) {
       this.clearBackground();
       return;
     }
@@ -260,6 +260,28 @@ export class HeatMap {
 
     // Remove points if the length has gone down.
     selection.exit().remove();
+
+    // Update hover cards.
+    const hoverCard = d3.select('#hovercard');
+    selection
+      .on('mouseenter', (d: Example2D) => {
+        const container = d3.select('#main-heatmap canvas');
+        const coordinates = d3.mouse(container.node());
+
+        hoverCard.style({
+          left: `${coordinates[0] + 20}px`,
+          top: `${coordinates[1]}px`,
+          display: 'block'
+        });
+
+        d3.select('#hovercard.ui-nvotes #first-class.value')
+          .text(d.voteCounts ? d.voteCounts[0] : '0');
+        d3.select('#hovercard.ui-nvotes #second-class.value')
+          .text(d.voteCounts ? d.voteCounts[1] : '0');
+      })
+      .on('mouseleave', () => {
+        hoverCard.style('display', 'none');
+      });
   }
 } // Close class HeatMap.
 

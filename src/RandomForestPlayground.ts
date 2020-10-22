@@ -9,7 +9,7 @@ import {
   getKeyFromValue,
   Problem
 } from './state';
-import { Example2D, shuffle } from './dataset';
+import { DataGenerator, Example2D, shuffle } from './dataset';
 import 'seedrandom';
 import {
   RandomForestClassifier
@@ -26,15 +26,10 @@ const DENSITY = 40;
 const TREE_DENSITY = 40;
 const NUM_VISIBLE_TREES = 20;
 
-interface InputFeature {
-  f: (x: number, y: number) => number;
-  label?: string;
-}
-
 const state = State.deserializeState();
 
 let mainBoundary: number[][];
-let treeBoundaries: number[][][];
+let estimatorBoundaries: number[][][];
 
 // Plot the main heatmap.
 const xDomain: [number, number] = [-6, 6];
@@ -48,23 +43,21 @@ const mainHeatMap = new HeatMap(
 );
 
 // Plot the tree heatmaps.
-const treeHeatMaps = [];
-for (let i = 0; i < NUM_VISIBLE_TREES; ++i) {
-  const treeHeatmapsContainer = d3.select('.tree-heatmaps-container')
+const estimatorHeatMaps = [];
+for (let i = 0; i < NUM_VISIBLE_TREES; i++) {
+  const estimatorHeatMapsContainer = d3.select('.estimator-heatmaps-container')
     .append('div')
-    .attr('id', `tree-heatmap-${i}`)
+    .attr('id', `estimator-heatmap-${i}`)
     .classed('mdl-cell mdl-cell--3-col', true);
   
-  const treeHeatMap = new HeatMap(
+  estimatorHeatMaps.push(new HeatMap(
     40,
     DENSITY,
     xDomain,
     xDomain,
-    treeHeatmapsContainer,
+    estimatorHeatMapsContainer,
     { showAxes: false, noSvg: true },
-  );
-
-  treeHeatMaps.push(treeHeatMap);
+  ));
 }
 
 const colorScale = d3.scale
@@ -74,6 +67,7 @@ const colorScale = d3.scale
   .clamp(true);
 
 let classifier: RandomForestClassifier;
+let data: Example2D[] = [];
 let trainData: Example2D[] = [];
 let testData: Example2D[] = [];
 let lossTrain: number;
@@ -81,7 +75,6 @@ let lossTest: number;
 
 function makeGUI() {
   d3.select('#train-button').on('click', () => {
-    userHasInteracted();
     train();
     updateUI();
   });
@@ -89,7 +82,6 @@ function makeGUI() {
   /* Data column */
   d3.select('#data-regen-button').on('click', () => {
     generateData();
-    parametersChanged = true;
     reset();
   });
   const dataThumbnails = d3.selectAll('canvas[data-dataset]');
@@ -102,7 +94,6 @@ function makeGUI() {
     dataThumbnails.classed('selected', false);
     d3.select(this).classed('selected', true);
     generateData();
-    parametersChanged = true;
     reset();
   });
 
@@ -120,7 +111,6 @@ function makeGUI() {
     regDataThumbnails.classed('selected', false);
     d3.select(this).classed('selected', true);
     generateData();
-    parametersChanged = true;
     reset();
   });
 
@@ -130,21 +120,12 @@ function makeGUI() {
     .classed('selected',true);
 
   /* Main Column */
-  for (let i = 0; i < treeHeatMaps.length; i++) {
-    d3.select(`#tree-heatmap-${i} canvas`)
+  // Draw the heatmaps of the esimators.
+  estimatorHeatMaps.forEach((heatMap, index) => {
+    d3.select(`#estimator-heatmap-${index} canvas`)
       .style('border', '2px solid black')
       .on('mouseenter', () => {
-        mainHeatMap.updateBackground(treeBoundaries[i], state.discretize);
-      })
-      .on('mouseleave', () => {
-        mainHeatMap.updateBackground(mainBoundary, state.discretize);
-      });
-  }
-  treeHeatMaps.forEach((heatMap, index) => {
-    d3.select(`#tree-heatmap-${index} canvas`)
-      .style('border', '2px solid black')
-      .on('mouseenter', () => {
-        mainHeatMap.updateBackground(heatMap.getBoundary(), state.discretize);
+        mainHeatMap.updateBackground(estimatorBoundaries[index], state.discretize);
       })
       .on('mouseleave', () => {
         mainHeatMap.updateBackground(mainBoundary, state.discretize);
@@ -152,10 +133,57 @@ function makeGUI() {
   });
 
   /* Output Column */
+  // Configure the number of trees
+  const nTrees = d3.select('#nTrees').on('input', function () {
+    state.nTrees = +this.value;
+    d3.select("label[for='nTrees'] .value")
+      .text(this.value);
+    reset();
+  });
+  nTrees.property('value', state.nTrees);
+  d3.select("label[for='nTrees'] .value")
+    .text(state.nTrees);
+
+  // Configure the max depth of each tree.
+  const maxDepth = d3.select('#maxDepth').on('input', function () {
+    state.maxDepth = +this.value;
+    d3.select("label[for='maxDepth'] .value")
+      .text(this.value);
+    reset();
+  });
+  maxDepth.property('value', state.maxDepth);
+  d3.select("label[for='maxDepth'] .value")
+    .text(state.maxDepth);
+
+  // Configure the number of samples to train each tree.
+  const percSamples = d3.select('#percSamples').on('input', function () {
+    state.percSamples = +this.value;
+    d3.select("label[for='percSamples'] .value")
+      .text(this.value);
+    reset();
+  });
+  percSamples.property('value', state.percSamples);
+  d3.select("label[for='percSamples'] .value")
+    .text(state.percSamples);
+
+  // Configure the maximum bagged feature.
+  const maxFeatures = d3.select('#maxFeatures').on('change', function () {
+    state.maxFeatures = +this.value;
+    state.serialize();
+    reset();
+  });
+  maxFeatures.property('value', state.maxFeatures);
+
+  const problem = d3.select('#problem').on('change', function () {
+    state.problem = problems[this.value];
+    generateData();
+    drawDatasetThumbnails();
+    reset();
+  });
+  problem.property('value', getKeyFromValue(problems, state.problem));
   const showTestData = d3.select('#show-test-data').on('change', function () {
     state.showTestData = this.checked;
     state.serialize();
-    userHasInteracted();
     mainHeatMap.updateTestPoints(state.showTestData ? testData : []);
   });
 
@@ -165,21 +193,19 @@ function makeGUI() {
   const discretize = d3.select('#discretize').on('change', function () {
     state.discretize = this.checked;
     state.serialize();
-    userHasInteracted();
     mainHeatMap.updateBackground(mainBoundary, state.discretize);
   });
 
   // Check/uncheck the checbox according to the current state.
   discretize.property('checked', state.discretize);
 
-  /* Network configurations */
+  /* Data configurations */
   // Configure the ratio of training data to test data.
   const percTrain = d3.select('#percTrainData').on('input', function () {
     state.percTrainData = this.value;
     d3.select("label[for='percTrainData'] .value")
       .text(this.value);
     generateData();
-    parametersChanged = true;
     reset();
   });
   percTrain.property('value', state.percTrainData);
@@ -192,7 +218,6 @@ function makeGUI() {
     d3.select("label[for='noise'] .value")
       .text(this.value);
     generateData();
-    parametersChanged = true;
     reset();
   });
   const currentMax = parseInt(noise.property('max'));
@@ -203,60 +228,6 @@ function makeGUI() {
   noise.property('value', state.noise);
   d3.select("label[for='noise'] .value")
     .text(state.noise);
-
-  // Configure the number of trees
-  const nTrees = d3.select('#nTrees').on('input', function () {
-    state.nTrees = +this.value;
-    d3.select("label[for='nTrees'] .value")
-      .text(this.value);
-    parametersChanged = true;
-    reset();
-  });
-  nTrees.property('value', state.nTrees);
-  d3.select("label[for='nTrees'] .value")
-    .text(state.nTrees);
-
-  // Configure the max depth of each tree
-  const maxDepth = d3.select('#maxDepth').on('input', function () {
-    state.maxDepth = +this.value;
-    d3.select("label[for='maxDepth'] .value")
-      .text(this.value);
-    parametersChanged = true;
-    reset();
-  });
-  maxDepth.property('value', state.maxDepth);
-  d3.select("label[for='maxDepth'] .value")
-    .text(state.maxDepth);
-
-  // Configure the number of samples to train each tree
-  const nSamples = d3.select('#nSamples').on('input', function () {
-    state.nSamples = +this.value;
-    d3.select("label[for='nSamples'] .value")
-      .text(this.value);
-    parametersChanged = true;
-    reset();
-  });
-  nSamples.property('value', state.nSamples);
-  d3.select("label[for='nSamples'] .value")
-    .text(state.nSamples);
-
-  const maxFeatures = d3.select('#maxFeatures').on('change', function () {
-    state.maxFeatures = +this.value;
-    state.serialize();
-    userHasInteracted();
-    parametersChanged = true;
-    reset();
-  });
-  maxFeatures.property('value', state.maxFeatures);
-
-  const problem = d3.select('#problem').on('change', function () {
-    state.problem = problems[this.value];
-    generateData();
-    drawDatasetThumbnails();
-    parametersChanged = true;
-    reset();
-  });
-  problem.property('value', getKeyFromValue(problems, state.problem));
 
   /* Color map */
   // Add scale to the gradient color map.
@@ -278,11 +249,26 @@ function makeGUI() {
 }
 
 function train() {
-  // RF implementation does not accept negative labels
   const trainingSet = trainData.map((d) => [d.x, d.y]);
+  // RF implementation does not accept negative labels
   const labels = trainData.map((d) => d.label === -1 ? 0 : d.label);
 
   classifier.train(trainingSet, labels);
+
+  const predictionValues: number[][] = classifier
+    .predict(data.map((d) => [d.x, d.y]))
+    .predictionValues;
+  const voteCounts = predictionValues.map((val: number[]) => {
+    val = val.map((i) => i === 0 ? -1 : 1);
+    return [
+      val.filter((i) => i === -1).length,
+      val.filter((i) => i === 1).length
+    ]
+  });
+
+  data.forEach((d, i) => { d.voteCounts = voteCounts[i] });
+  splitTrainTest();
+  updatePoints();
 
   lossTrain = getLoss(trainData);
   lossTest = getLoss(testData);
@@ -290,22 +276,18 @@ function train() {
   updateUI();
 }
 
-/**
- * Given a neural network, it asks the network for the output (prediction)
- * of every node in the network using inputs sampled on a square grid.
- * It returns a map where each key is the node ID and the value is a square
- * matrix of the outputs of the network for each input in the grid respectively.
- */
-function updateDecisionBoundary(firstTime = false): void {
+function updateDecisionBoundary(): void {
   let i: number;
   let j: number;
   let k: number;
 
   for (k = 0; k < NUM_VISIBLE_TREES; k++) {
-    treeBoundaries[k] = new Array(DENSITY);
+    estimatorBoundaries[k] = new Array(DENSITY);
+
     for (i = 0; i < DENSITY; i++) {
       mainBoundary[i] = new Array(DENSITY);
-      treeBoundaries[k][i] = new Array(DENSITY);
+      estimatorBoundaries[k][i] = new Array(DENSITY);
+
       for (j = 0; j < DENSITY; j++) {
         // 1 for points inside, and 0 for points outside the circle.
         const xScale = d3.scale
@@ -316,15 +298,12 @@ function updateDecisionBoundary(firstTime = false): void {
           .linear()
           .domain([DENSITY - 1, 0])
           .range(xDomain);
-        
         const x = xScale(i);
         const y = yScale(j);
   
-        const predictions = classifier.predict([[x, y]]);
-  
-        mainBoundary[i][j] = predictions.predictions[0];
-  
-        treeBoundaries[k][i][j] = predictions.predictionValues.getColumn(k)[0];
+        const { predictions, predictionValues } = classifier.predict([[x, y]]);
+        mainBoundary[i][j] = predictions[0];
+        estimatorBoundaries[k][i][j] = predictionValues[0][k];
       }
     }
   }
@@ -338,19 +317,7 @@ function getLoss(dataPoints: Example2D[]): number {
     const y = dataPoint.y;
 
     // TODO: Choose less confusing var names.
-    const output = classifier.predict([[x, y]]);
-    let predictions = output.predictions[0];
-    const predictionValues = [];
-    for (let i = 0; i < state.nTrees; i++) {
-      let value = output.predictionValues.getColumn(i)[0];
-      value = value === 0 ? -1 : value;
-      predictionValues.push(value);
-    }
-    // Declare this as a global var.
-    d3.select('#hovercard.ui-nvotes #first-class.value')
-      .text(predictionValues.filter((v) => v === -1).length);
-    d3.select('#hovercard.ui-nvotes #second-class.value')
-      .text(predictionValues.filter((v) => v === 1).length);
+    let prediction = classifier.predict([[x, y]]).predictions[0];
 
     // TODO: Get rid of label scales.
     const scale = d3.scale
@@ -358,21 +325,20 @@ function getLoss(dataPoints: Example2D[]): number {
       .domain([0, 1])
       .range([-1, 1]);
     
-    predictions = scale(predictions);
+    prediction = scale(prediction);
 
-    loss += 0.5 * Math.pow(predictions - dataPoint.label, 2);
+    loss += 0.5 * Math.pow(prediction - dataPoint.label, 2);
   }
   return loss / dataPoints.length;
 }
 
 function updateUI(reset = false) {
-  // Get the decision boundary of the network.
-  if (!reset) updateDecisionBoundary(reset);
+  if (!reset) updateDecisionBoundary();
 
   mainHeatMap.updateBackground(mainBoundary, state.discretize);
-  for (let i = 0; i < treeHeatMaps.length; i++) {
-    treeHeatMaps[i].updateBackground(treeBoundaries[i], state.discretize);
-  }
+  estimatorHeatMaps.forEach((heatMap: HeatMap, idx: number) => {
+    heatMap.updateBackground(estimatorBoundaries[idx], state.discretize);
+  });
 
   function humanReadable(n: number): string {
     return n.toFixed(3);
@@ -381,29 +347,13 @@ function updateUI(reset = false) {
   // Update loss and iteration number.
   d3.select('#loss-train').text(humanReadable(lossTrain));
   d3.select('#loss-test').text(humanReadable(lossTest));
-
-  const hoverCard = d3.select('#hovercard');
-  d3.selectAll('#main-heatmap svg circle')
-    .on('mouseenter', () => {
-      const container = d3.select('#main-heatmap canvas');
-      const coordinates = d3.mouse(container.node());
-
-      hoverCard.style({
-        left: `${coordinates[0] + 20}px`,
-        top: `${coordinates[1]}px`,
-        display: 'block'
-      });
-    })
-    .on('mouseleave', () => {
-      hoverCard.style('display', 'none');
-    });
 }
 
 /* Reset the learning progress */
-function reset(onStartup = false) {
+function reset() {
   classifier = new RandomForestClassifier({
-    nSamples: state.nSamples / NUM_SAMPLES_CLASSIFY,
     nEstimators: state.nTrees,
+    maxSamples: state.percSamples / 100,
     maxFeatures: state.maxFeatures / 2,
     treeOptions: { maxDepth: state.maxDepth },
     selectionMethod: 'mean',
@@ -413,27 +363,28 @@ function reset(onStartup = false) {
   lossTest = 0;
   lossTrain = 0;
   mainBoundary = [];
-  treeBoundaries = [];
-  d3.selectAll('#hovercard.ui-nvotes .value')
-    .text('0');
+  estimatorBoundaries = new Array(NUM_VISIBLE_TREES).fill([]);
+
+  data.forEach((d) => {
+    delete d.voteCounts;
+  });
+  splitTrainTest();
+  updatePoints();
 
   state.serialize();
-  if (!onStartup) {
-    userHasInteracted();
-  }
 
   updateUI(true);
 }
 
 function drawDatasetThumbnails() {
-  function renderThumbnail(canvas, dataGenerator) {
+  function renderThumbnail(canvas, dataGenerator: DataGenerator) {
     const w = 100;
     const h = 100;
     canvas.setAttribute('width', w);
     canvas.setAttribute('height', h);
     const context = canvas.getContext('2d');
     const data = dataGenerator(200, 0);
-    data.forEach((d) => {
+    data.forEach((d: Example2D) => {
       context.fillStyle = colorScale(d.label);
       context.fillRect((w * (d.x + 6)) / 12, (h * (d.y + 6)) / 12, 4, 4);
     });
@@ -467,7 +418,6 @@ function generateData(firstTime = false) {
     // Change the seed.
     state.seed = Math.random().toFixed(5);
     state.serialize();
-    userHasInteracted();
   }
 
   Math.seedrandom(state.seed);
@@ -479,34 +429,27 @@ function generateData(firstTime = false) {
     state.problem === Problem.CLASSIFICATION
       ? state.dataset
       : state.regDataset;
-  const data = generator(numSamples, state.noise / 100);
+
+  data = generator(numSamples, state.noise / 100);
   // Shuffle the data in-place.
   shuffle(data);
-  // Split into train and test data.
-  const splitIndex = Math.floor((data.length * state.percTrainData) / 100);
+  splitTrainTest();
 
-  trainData = data.slice(0, splitIndex);
-  testData = data.slice(splitIndex);
+  updatePoints();
+}
 
+function updatePoints() {
   mainHeatMap.updatePoints(trainData);
   mainHeatMap.updateTestPoints(state.showTestData ? testData : []);
 }
 
-let firstInteraction = true;
-let parametersChanged = false;
-
-function userHasInteracted() {
-  if (!firstInteraction) {
-    return;
-  }
-  firstInteraction = false;
-  let page = 'index';
-  if (state.tutorial != null && state.tutorial !== '') {
-    page = `/v/tutorials/${state.tutorial}`;
-  }
+function splitTrainTest() {
+  const splitIndex = Math.floor((data.length * state.percTrainData) / 100);
+  trainData = data.slice(0, splitIndex);
+  testData = data.slice(splitIndex);
 }
 
 drawDatasetThumbnails();
 makeGUI();
 generateData(true);
-reset(true);
+reset();
