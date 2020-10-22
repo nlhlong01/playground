@@ -13,7 +13,7 @@
     "test": "start-server-and-test start http-get://localhost:5000 cy:run",
     "test:dev": "start-server-and-test start http-get://localhost:5000 cy:open",
     "test:coverage": "nyc npm run test",
-    "deploy": "npm run build && rimraf docs/* && copyfiles -f dist/randomforest.html dist/bundle.css dist/RandomForest.bundle.js docs"
+    "deploy": "npm run build && rimraf docs/* && copyfiles -f dist/index.html dist/bundle.css dist/RandomForest.bundle.js docs"
   },
   "devDependencies": {
     "@babel/core": "^7.11.1",
