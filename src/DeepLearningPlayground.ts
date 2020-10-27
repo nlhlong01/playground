@@ -30,7 +30,6 @@ import {
 import { Example2D, shuffle } from './dataset';
 import { AppendingLineChart } from './linechart';
 import 'seedrandom';
-import 'ml-random-forest';
 
 let mainWidth;
 

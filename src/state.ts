@@ -201,7 +201,7 @@ export class State {
 
   maxDepth = 5;
 
-  maxFeatures = 1;
+  maxFeatures = 2;
 
   /**
    * Deserializes the state from the url hash.

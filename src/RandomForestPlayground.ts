@@ -11,6 +11,7 @@ import {
 } from './state';
 import { DataGenerator, Example2D, shuffle } from './dataset';
 import 'seedrandom';
+// TODO: Bring this file to the same folder.
 import {
   RandomForestClassifier
 } from '../../random-forest/src/RandomForestClassifier';
@@ -43,7 +44,7 @@ const mainHeatMap = new HeatMap(
 );
 
 // Plot the tree heatmaps.
-const estimatorHeatMaps = [];
+const estimatorHeatMaps: HeatMap[] = [];
 for (let i = 0; i < NUM_VISIBLE_TREES; i++) {
   const estimatorHeatMapsContainer = d3.select('.estimator-heatmaps-container')
     .append('div')
@@ -74,9 +75,16 @@ let lossTrain: number;
 let lossTest: number;
 
 function makeGUI() {
-  d3.select('#train-button').on('click', () => {
-    train();
-    updateUI();
+  d3.select('#train-button').on('click', async () => {
+    new Promise(resolve => {
+      d3.select('html').style('cursor', 'wait');
+      setTimeout(resolve, 500);
+    })
+    .then(() => {
+      train();
+      updateUI();
+      d3.select('html').style('cursor', 'auto');
+    });
   });
 
   /* Data column */
@@ -125,7 +133,10 @@ function makeGUI() {
     d3.select(`#estimator-heatmap-${index} canvas`)
       .style('border', '2px solid black')
       .on('mouseenter', () => {
-        mainHeatMap.updateBackground(estimatorBoundaries[index], state.discretize);
+        mainHeatMap.updateBackground(
+          estimatorBoundaries[index],
+          state.discretize
+        );
       })
       .on('mouseleave', () => {
         mainHeatMap.updateBackground(mainBoundary, state.discretize);
@@ -272,8 +283,6 @@ function train() {
 
   lossTrain = getLoss(trainData);
   lossTest = getLoss(testData);
-
-  updateUI();
 }
 
 function updateDecisionBoundary(): void {
@@ -281,28 +290,31 @@ function updateDecisionBoundary(): void {
   let j: number;
   let k: number;
 
+  // 1 for points inside, and 0 for points outside the circle.
+  const xScale = d3.scale
+    .linear()
+    .domain([0, DENSITY - 1])
+    .range(xDomain);
+  const yScale = d3.scale
+    .linear()
+    .domain([DENSITY - 1, 0])
+    .range(xDomain);
+
   for (k = 0; k < NUM_VISIBLE_TREES; k++) {
     estimatorBoundaries[k] = new Array(DENSITY);
-
     for (i = 0; i < DENSITY; i++) {
-      mainBoundary[i] = new Array(DENSITY);
       estimatorBoundaries[k][i] = new Array(DENSITY);
+    }
+  }
 
-      for (j = 0; j < DENSITY; j++) {
-        // 1 for points inside, and 0 for points outside the circle.
-        const xScale = d3.scale
-          .linear()
-          .domain([0, DENSITY - 1])
-          .range(xDomain);
-        const yScale = d3.scale
-          .linear()
-          .domain([DENSITY - 1, 0])
-          .range(xDomain);
-        const x = xScale(i);
-        const y = yScale(j);
-  
-        const { predictions, predictionValues } = classifier.predict([[x, y]]);
-        mainBoundary[i][j] = predictions[0];
+  for (i = 0; i < DENSITY; i++) {
+    mainBoundary[i] = new Array(DENSITY);
+    for (j = 0; j < DENSITY; j++) {
+      const x = xScale(i);
+      const y = yScale(j);
+      const { predictions, predictionValues } = classifier.predict([[x, y]]);
+      mainBoundary[i][j] = predictions[0];
+      for (k = 0; k < NUM_VISIBLE_TREES; k++) {
         estimatorBoundaries[k][i][j] = predictionValues[0][k];
       }
     }
