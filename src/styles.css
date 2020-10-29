@@ -980,3 +980,8 @@ footer .links a:hover {
   margin-right: 0;
   visibility: hidden;
 }
+
+#training-progress {
+  width: auto;
+  visibility: hidden;
+}

@@ -13,11 +13,13 @@ import { DataGenerator, Example2D, shuffle } from './dataset';
 import 'seedrandom';
 // TODO: Bring this file to the same folder.
 import {
-  RandomForestClassifier
+  RandomForestClassifier as RFClassifier
 } from '../../random-forest/src/RandomForestClassifier';
+import { ClassifierOptions } from './ml-random-forest';
 import './styles.css';
 import 'material-design-lite';
 import 'material-design-lite/dist/material.indigo-blue.min.css';
+import Worker from 'worker-loader!./train.worker';
 
 const NUM_SAMPLES_CLASSIFY = 500;
 const NUM_SAMPLES_REGRESS = 1200;
@@ -67,7 +69,8 @@ const colorScale = d3.scale
   .range(['#f59322', '#e8eaeb', '#0877bd'])
   .clamp(true);
 
-let classifier: RandomForestClassifier;
+let options: ClassifierOptions;
+let classifier: RFClassifier;
 let data: Example2D[] = [];
 let trainData: Example2D[] = [];
 let testData: Example2D[] = [];
@@ -75,16 +78,44 @@ let lossTrain: number;
 let lossTest: number;
 
 function makeGUI() {
-  d3.select('#train-button').on('click', async () => {
-    new Promise(resolve => {
-      d3.select('html').style('cursor', 'wait');
-      setTimeout(resolve, 500);
-    })
-    .then(() => {
-      train();
-      updateUI();
-      d3.select('html').style('cursor', 'auto');
+  d3.select('#train-button').on('click', () => {
+    d3.select('#training-progress').style('visibility', 'visible');
+
+    const trainWorker = new Worker();
+
+    const trainingSet = trainData.map((d) => [d.x, d.y]);
+    // RF implementation does not accept negative labels
+    const labels = trainData.map((d) => d.label === -1 ? 0 : d.label);
+
+    trainWorker.postMessage({
+      options: options,
+      trainingSet: trainingSet,
+      labels: labels
     });
+
+    trainWorker.onmessage = (evt: MessageEvent) => {
+      classifier = RFClassifier.load(evt.data);
+      const predictionValues: number[][] = classifier
+        .predict(data.map((d) => [d.x, d.y]))
+        .predictionValues;
+      const voteCounts = predictionValues.map((val: number[]) => {
+        val = val.map((i) => i === 0 ? -1 : 1);
+        return [
+          val.filter((i) => i === -1).length,
+          val.filter((i) => i === 1).length
+        ]
+      });
+  
+      data.forEach((d, i) => { d.voteCounts = voteCounts[i] });
+      splitTrainTest();
+      updatePoints();
+  
+      lossTrain = getLoss(trainData);
+      lossTest = getLoss(testData);
+  
+      updateUI();
+      d3.select('#training-progress').style('visibility', 'hidden');
+    };
   });
 
   /* Data column */
@@ -259,32 +290,6 @@ function makeGUI() {
     .call(xAxis);
 }
 
-function train() {
-  const trainingSet = trainData.map((d) => [d.x, d.y]);
-  // RF implementation does not accept negative labels
-  const labels = trainData.map((d) => d.label === -1 ? 0 : d.label);
-
-  classifier.train(trainingSet, labels);
-
-  const predictionValues: number[][] = classifier
-    .predict(data.map((d) => [d.x, d.y]))
-    .predictionValues;
-  const voteCounts = predictionValues.map((val: number[]) => {
-    val = val.map((i) => i === 0 ? -1 : 1);
-    return [
-      val.filter((i) => i === -1).length,
-      val.filter((i) => i === 1).length
-    ]
-  });
-
-  data.forEach((d, i) => { d.voteCounts = voteCounts[i] });
-  splitTrainTest();
-  updatePoints();
-
-  lossTrain = getLoss(trainData);
-  lossTest = getLoss(testData);
-}
-
 function updateDecisionBoundary(): void {
   let i: number;
   let j: number;
@@ -363,15 +368,16 @@ function updateUI(reset = false) {
 
 /* Reset the learning progress */
 function reset() {
-  classifier = new RandomForestClassifier({
+  options = {
     nEstimators: state.nTrees,
     maxSamples: state.percSamples / 100,
     maxFeatures: state.maxFeatures / 2,
     treeOptions: { maxDepth: state.maxDepth },
-    selectionMethod: 'mean',
     useSampleBagging: true,
-    replacement: false
-  });
+    replacement: false,
+    selectionMethod: 'mean',
+  };
+  classifier = null;
   lossTest = 0;
   lossTrain = 0;
   mainBoundary = [];

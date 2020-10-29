@@ -35,6 +35,8 @@ limitations under the License.
     <h1 class="l--page">Tinker With a <b>Random Forest</b> <span class="optional">Right Here </span>in Your Browser.</h1>
   </header>
 
+  <div id="training-progress" class="mdl-progress mdl-js-progress mdl-progress__indeterminate"></div>
+
   <!-- Main Part -->
   <div id="main-part" class="l--page">
     <!--  Data Column-->
@@ -96,7 +98,7 @@ limitations under the License.
         </div>
       </div>
 
-      <div style="display: flex;">
+      <div class="predictions" style="display: flex;">
         <div>
           <div>Predictions:</div>
           <div id="main-heatmap"">
@@ -114,7 +116,7 @@ limitations under the License.
         </div>
       </div>
 
-      <div style="display: flex; align-items:center;">
+      <div class="color-scale" style="display: flex; align-items:center;">
         <!-- Gradient color scale -->
         <div class="label" style="width:105px; margin-right: 10px">
           Colors shows data, neuron and weight values.

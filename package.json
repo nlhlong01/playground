@@ -54,7 +54,8 @@
     "webpack": "^4.44.1",
     "webpack-cli": "^3.3.12",
     "webpack-dev-server": "^3.11.0",
-    "webpack-merge": "^5.1.2"
+    "webpack-merge": "^5.1.2",
+    "worker-loader": "^3.0.5"
   },
   "dependencies": {
     "d3": "^3.5.16",
