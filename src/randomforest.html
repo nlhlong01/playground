@@ -67,7 +67,7 @@ limitations under the License.
       </div>
       <div>
         <div class="ui-percTrainData">
-          <label for="percTrainData">Ratio of training to test data:&nbsp;&nbsp;<span class="value">XX</span>%</label>
+          <label for="percTrainData">training data:&nbsp;&nbsp;<span class="value">XX</span>%</label>
           <p class="slider">
             <input class="mdl-slider mdl-js-slider" type="range" id="percTrainData" min="10" max="90" step="10">
           </p>
@@ -96,7 +96,7 @@ limitations under the License.
         </div>
       </div>
 
-      <div style="display: flex;">
+      <div class="predictions" style="display: flex;">
         <div>
           <div>Predictions:</div>
           <div id="main-heatmap"">
@@ -114,7 +114,7 @@ limitations under the License.
         </div>
       </div>
 
-      <div style="display: flex; align-items:center;">
+      <div class="color-scale" style="display: flex; align-items:center;">
         <!-- Gradient color scale -->
         <div class="label" style="width:105px; margin-right: 10px">
           Colors shows data, neuron and weight values.

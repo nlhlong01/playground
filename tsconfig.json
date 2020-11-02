@@ -5,7 +5,8 @@
     "preserveConstEnums": true,
     "target": "ES5",
     "sourceMap": true,
-    "moduleResolution": "Node"
+    "moduleResolution": "Node",
+    "lib": ["WebWorker", "ES6", "DOM", "ScriptHost"]
   },
   "exclude": ["node_modules"]
 }

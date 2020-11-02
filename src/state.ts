@@ -131,77 +131,44 @@ export class State {
     { name: 'percSamples', type: Type.NUMBER },
     { name: 'nTrees', type: Type.NUMBER },
     { name: 'maxDepth', type: Type.NUMBER },
-    { name: 'maxFeatures', type: Type.NUMBER },
+    { name: 'maxFeatures', type: Type.NUMBER }
   ];
 
   [key: string]: any;
-
   learningRate = 0.03;
-
   regularizationRate = 0;
-
   showTestData = false;
-
   noise = 0;
-
   batchSize = 10;
-
   discretize = false;
-
   tutorial: string = null;
-
   percTrainData = 50;
-
   activation = nn.Activations.TANH;
-
   regularization: nn.RegularizationFunction = null;
-
   problem = Problem.CLASSIFICATION;
-
   initZero = false;
-
   // TODO: Remove this feature
   hideText = false;
-
   collectStats = false;
-
   numHiddenLayers = 1;
-
   hiddenLayerControls: any[] = [];
-
   networkShape: number[] = [4, 2];
-
   x = true;
-
   y = true;
-
   xTimesY = false;
-
   xSquared = false;
-
   ySquared = false;
-
   cosX = false;
-
   sinX = false;
-
   cosY = false;
-
   sinY = false;
-
   dataset: dataset.DataGenerator = dataset.classifyCircleData;
-
   regDataset: dataset.DataGenerator = dataset.regressPlane;
-
   seed: string;
-
   percSamples = 80;
-
   nTrees = 100;
-
   maxDepth = 5;
-
-  maxFeatures = 1;
+  maxFeatures = 2;
 
   /**
    * Deserializes the state from the url hash.
