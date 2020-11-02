@@ -5,7 +5,7 @@ Random Forest, Decision Tree and Support Vector Machine (SVM).
 
 Tech stack: TypeScript, D3.js, Webpack.
 
-This project is a fork of the [Tensorflow's Deep Machine Learning](https://playground.tensorflow.org)
+This project is a fork of the [Tensorflow's Deep Machine Learning](https://playground.tensorflow.org).
 The UI of the Random Forest Playground is inspired by [Alex Rogozhnikov's Gradient Boosting Interactive Playground](https://arogozhnikov.github.io/)
 
 ## Development
