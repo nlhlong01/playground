@@ -367,6 +367,7 @@ function updateUI(reset = false) {
 function reset(onStartup = false) {
   if (!onStartup) {
     trainWorker.terminate();
+    isLoading(false);
   }
   trainWorker = new Worker();
   options = {
