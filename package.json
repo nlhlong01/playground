@@ -12,7 +12,8 @@
     "cy:open": "cypress open",
     "test": "start-server-and-test start http-get://localhost:5000 cy:run",
     "test:dev": "start-server-and-test start http-get://localhost:5000 cy:open",
-    "test:coverage": "nyc npm run test"
+    "test:coverage": "nyc npm run test",
+    "deploy": "npm run build && rimraf docs/* && copyfiles -f dist/index.html dist/bundle.css dist/RandomForest.bundle.js docs"
   },
   "devDependencies": {
     "@babel/core": "^7.11.1",
@@ -29,6 +30,7 @@
     "babel-plugin-istanbul": "^6.0.0",
     "babel-plugin-transform-class-properties": "^6.24.1",
     "clean-webpack-plugin": "^3.0.0",
+    "copyfiles": "^2.4.0",
     "css-loader": "^4.2.1",
     "css-minimizer-webpack-plugin": "^1.1.2",
     "cypress": "^5.0.0",
