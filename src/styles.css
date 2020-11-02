@@ -841,8 +841,8 @@ g.train circle {
 }
 
 g.test circle {
-  stroke-width: 1;
   stroke: black;
+  stroke-width: 1;
   stroke-opacity: 0.6;
   fill-opacity: 0.9;
 }
@@ -973,15 +973,4 @@ footer .links a:hover {
 
 .mdl-checkbox__ripple-container .mdl-ripple {
   background-color: #183d4e;
-}
-
-.mdl-spinner {
-  margin-top: 25px;
-  margin-right: 0;
-  visibility: hidden;
-}
-
-#training-progress {
-  width: auto;
-  visibility: hidden;
 }

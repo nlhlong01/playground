@@ -3,10 +3,11 @@ import {
 } from '../../random-forest/src/RandomForestClassifier';
 
 const ctx: Worker = self as any;
+let classifier: RFClassifier;
 
-ctx.onmessage = function(e) {
-  const { options, trainingSet, labels } = e.data;
-  const classifier = new RFClassifier(options);
+ctx.onmessage = function(evt: MessageEvent) {
+  const { options, trainingSet, labels } = evt.data;
+  classifier = new RFClassifier(options);
   classifier.train(trainingSet, labels);
   const model = JSON.parse(JSON.stringify(classifier));
 

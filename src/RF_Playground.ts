@@ -1,6 +1,5 @@
-/* eslint-disable */
 import * as d3 from 'd3';
-import { HeatMap } from './heatmap';
+import { HeatMap, reduceMatrix } from './heatmap';
 import {
   State,
   datasets,
@@ -21,12 +20,10 @@ import 'material-design-lite';
 import 'material-design-lite/dist/material.indigo-blue.min.css';
 import Worker from 'worker-loader!./train.worker';
 
-const NUM_SAMPLES_CLASSIFY = 500;
+const NUM_SAMPLES_CLASSIFY = 400;
 const NUM_SAMPLES_REGRESS = 1200;
 // # of points per direction.
-const DENSITY = 40;
-// TODO: TREE_DENSITY should be 10
-const TREE_DENSITY = 40;
+const DENSITY = 50;
 const NUM_VISIBLE_TREES = 20;
 
 const state = State.deserializeState();
@@ -48,18 +45,18 @@ const mainHeatMap = new HeatMap(
 // Plot the tree heatmaps.
 const estimatorHeatMaps: HeatMap[] = [];
 for (let i = 0; i < NUM_VISIBLE_TREES; i++) {
-  const estimatorHeatMapsContainer = d3.select('.estimator-heatmaps-container')
+  const estimatorHeatMapsContainer = d3
+    .select('.estimator-heatmaps-container')
     .append('div')
     .attr('id', `estimator-heatmap-${i}`)
     .classed('mdl-cell mdl-cell--3-col', true);
-  
   estimatorHeatMaps.push(new HeatMap(
     40,
     DENSITY,
     xDomain,
     xDomain,
     estimatorHeatMapsContainer,
-    { showAxes: false, noSvg: true },
+    { showAxes: false, noSvg: true, pointer: true },
   ));
 }
 
@@ -69,6 +66,7 @@ const colorScale = d3.scale
   .range(['#f59322', '#e8eaeb', '#0877bd'])
   .clamp(true);
 
+let trainWorker: Worker;
 let options: ClassifierOptions;
 let classifier: RFClassifier;
 let data: Example2D[] = [];
@@ -79,20 +77,19 @@ let lossTest: number;
 
 function makeGUI() {
   d3.select('#train-button').on('click', () => {
-    d3.select('#training-progress').style('visibility', 'visible');
+    isLoading(true);
 
-    const trainWorker = new Worker();
+    trainWorker.terminate();
+    trainWorker = new Worker();
 
     const trainingSet = trainData.map((d) => [d.x, d.y]);
     // RF implementation does not accept negative labels
     const labels = trainData.map((d) => d.label === -1 ? 0 : d.label);
-
     trainWorker.postMessage({
       options: options,
       trainingSet: trainingSet,
       labels: labels
     });
-
     trainWorker.onmessage = (evt: MessageEvent) => {
       classifier = RFClassifier.load(evt.data);
       const predictionValues: number[][] = classifier
@@ -103,18 +100,20 @@ function makeGUI() {
         return [
           val.filter((i) => i === -1).length,
           val.filter((i) => i === 1).length
-        ]
+        ];
       });
-  
-      data.forEach((d, i) => { d.voteCounts = voteCounts[i] });
+
+      data.forEach((d, i) => {
+        d.voteCounts = voteCounts[i];
+      });
       splitTrainTest();
       updatePoints();
-  
+
       lossTrain = getLoss(trainData);
       lossTest = getLoss(testData);
-  
+
       updateUI();
-      d3.select('#training-progress').style('visibility', 'hidden');
+      isLoading(false);
     };
   });
 
@@ -156,16 +155,16 @@ function makeGUI() {
   const regDatasetKey = getKeyFromValue(regDatasets, state.regDataset);
   // Select the dataset according to the current state.
   d3.select(`canvas[data-regDataset=${regDatasetKey}]`)
-    .classed('selected',true);
+    .classed('selected', true);
 
   /* Main Column */
-  // Draw the heatmaps of the esimators.
-  estimatorHeatMaps.forEach((heatMap, index) => {
-    d3.select(`#estimator-heatmap-${index} canvas`)
+  // Heat maps of the esimators.
+  estimatorHeatMaps.forEach((map, idx) => {
+    d3.select(`#estimator-heatmap-${idx} canvas`)
       .style('border', '2px solid black')
       .on('mouseenter', () => {
         mainHeatMap.updateBackground(
-          estimatorBoundaries[index],
+          estimatorBoundaries[idx],
           state.discretize
         );
       })
@@ -341,7 +340,6 @@ function getLoss(dataPoints: Example2D[]): number {
       .linear()
       .domain([0, 1])
       .range([-1, 1]);
-    
     prediction = scale(prediction);
 
     loss += 0.5 * Math.pow(prediction - dataPoint.label, 2);
@@ -351,10 +349,9 @@ function getLoss(dataPoints: Example2D[]): number {
 
 function updateUI(reset = false) {
   if (!reset) updateDecisionBoundary();
-
   mainHeatMap.updateBackground(mainBoundary, state.discretize);
-  estimatorHeatMaps.forEach((heatMap: HeatMap, idx: number) => {
-    heatMap.updateBackground(estimatorBoundaries[idx], state.discretize);
+  estimatorHeatMaps.forEach((map: HeatMap, idx: number) => {
+    map.updateBackground(estimatorBoundaries[idx], state.discretize);
   });
 
   function humanReadable(n: number): string {
@@ -367,7 +364,11 @@ function updateUI(reset = false) {
 }
 
 /* Reset the learning progress */
-function reset() {
+function reset(onStartup = false) {
+  if (!onStartup) {
+    trainWorker.terminate();
+  }
+  trainWorker = new Worker();
   options = {
     nEstimators: state.nTrees,
     maxSamples: state.percSamples / 100,
@@ -377,12 +378,11 @@ function reset() {
     replacement: false,
     selectionMethod: 'mean',
   };
-  classifier = null;
+  classifier = new RFClassifier(options);
   lossTest = 0;
   lossTrain = 0;
   mainBoundary = [];
   estimatorBoundaries = new Array(NUM_VISIBLE_TREES).fill([]);
-
   data.forEach((d) => {
     delete d.voteCounts;
   });
@@ -467,7 +467,18 @@ function splitTrainTest() {
   testData = data.slice(splitIndex);
 }
 
+function isLoading(loading: boolean) {
+  d3.selectAll('*')
+    .style('cursor', loading ? 'progress' : null);
+  d3.select('#main-heatmap canvas')
+    .style('opacity', loading ? 0.2 : 1);
+  d3.select('#main-heatmap svg')
+    .style('opacity', loading ? 0.2 : 1);
+  d3.selectAll('.estimator-heatmaps-container canvas')
+    .style('opacity', loading ? 0.2 : 1);
+}
+
 drawDatasetThumbnails();
 makeGUI();
 generateData(true);
-reset();
+reset(true);

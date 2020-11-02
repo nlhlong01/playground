@@ -8,14 +8,10 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 module.exports = {
   context: path.resolve(__dirname, 'src'),
   entry: {
-    RandomForest: './RandomForestPlayground.ts'
+    RandomForestPlayground: './RF_Playground.ts'
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './randomforest.html'
-    }),
-    new HtmlWebpackPlugin({
-      filename: 'randomforest.html',
       template: './randomforest.html'
     }),
     new MiniCssExtractPlugin({

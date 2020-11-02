@@ -35,20 +35,12 @@ export class HeatMap {
     showAxes: false,
     noSvg: false
   };
-
   private xScale: d3.scale.Linear<number, number>;
-
   private yScale: d3.scale.Linear<number, number>;
-
   private numSamples: number;
-
   private color;
-
   private canvas;
-
   private svg;
-
-  private boundary: number[][];
 
   constructor(
     width: number,
@@ -161,10 +153,6 @@ export class HeatMap {
     }
   }
 
-  getBoundary(): number[][] {
-    return this.boundary;
-  }
-
   updateTestPoints(points: Example2D[]): void {
     if (this.settings.noSvg) {
       throw Error("Can't add points since noSvg=true");
@@ -183,7 +171,6 @@ export class HeatMap {
     const canvas = this.canvas.node();
     const context = canvas.getContext('2d');
     context.clearRect(0, 0, canvas.width, canvas.height);
-    this.boundary = [];
   }
 
   updateBackground(data: number[][], discretize: boolean): void {
@@ -191,8 +178,6 @@ export class HeatMap {
       this.clearBackground();
       return;
     }
-
-    this.boundary = data;
 
     const flattenedData = data.reduce((acc, val) => acc.concat(val), []);
     const labelScale = d3.scale
