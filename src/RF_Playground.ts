@@ -1,5 +1,5 @@
 import * as d3 from 'd3';
-import { HeatMap, reduceMatrix } from './heatmap';
+import { HeatMap } from './heatmap';
 import {
   State,
   datasets,
@@ -85,21 +85,38 @@ function makeGUI() {
     const trainingSet = trainData.map((d) => [d.x, d.y]);
     // RF implementation does not accept negative labels
     const labels = trainData.map((d) => d.label === -1 ? 0 : d.label);
+
     trainWorker.postMessage({
       options: options,
       trainingSet: trainingSet,
       labels: labels
     });
+
     trainWorker.onmessage = (evt: MessageEvent) => {
       classifier = RFClassifier.load(evt.data);
-      const predictionValues: number[][] = classifier
-        .predict(data.map((d) => [d.x, d.y]))
-        .predictionValues;
-      const voteCounts = predictionValues.map((val: number[]) => {
-        val = val.map((i) => i === 0 ? -1 : 1);
+
+      // Final predictions of RF and predictions of estimators.
+      let predictions: number[];
+      let estimatorPredictions;
+      ({ predictions, estimatorPredictions } = classifier.predict(
+        data.map((d: Example2D) => [d.x, d.y])
+      ));
+
+      // Turns 0 labels back to -1
+      predictions = predictions.map((pred) => pred === 0 ? -1 : pred);
+      estimatorPredictions = estimatorPredictions.map(
+        (est: number[]) => {
+          est.map(
+            (pred: number) => pred === 0 ? -1 : pred
+          );
+        }
+      );
+
+      const voteCounts = estimatorPredictions.map((est: number[]) => {
+        est = est.map((i) => i === 0 ? -1 : 1);
         return [
-          val.filter((i) => i === -1).length,
-          val.filter((i) => i === 1).length
+          est.filter((i) => i === -1).length,
+          est.filter((i) => i === 1).length
         ];
       });
 
@@ -107,10 +124,11 @@ function makeGUI() {
         d.voteCounts = voteCounts[i];
       });
       splitTrainTest();
+
       updatePoints();
 
-      lossTrain = getLoss(trainData);
-      lossTest = getLoss(testData);
+      // lossTrain = getLoss(trainData);
+      // lossTest = getLoss(testData);
 
       updateUI();
       isLoading(false);
@@ -325,26 +343,89 @@ function updateDecisionBoundary(): void {
   }
 }
 
-function getLoss(dataPoints: Example2D[]): number {
-  let loss = 0;
+function predictData(dataPoints: Example2D[]) {
+  if (!classifier) throw new Error('Classifier is not defined');
+
+  const predictions: number[] = [];
+
   for (let i = 0; i < dataPoints.length; i++) {
     const dataPoint = dataPoints[i];
     const x = dataPoint.x;
     const y = dataPoint.y;
 
-    // TODO: Choose less confusing var names.
-    let prediction = classifier.predict([[x, y]]).predictions[0];
+    const prediction = classifier.predict([[x, y]]).predictions[0];
 
     // TODO: Get rid of label scales.
     const scale = d3.scale
       .linear()
       .domain([0, 1])
       .range([-1, 1]);
-    prediction = scale(prediction);
 
-    loss += 0.5 * Math.pow(prediction - dataPoint.label, 2);
+    predictions.push(scale(prediction));
   }
-  return loss / dataPoints.length;
+
+  return predictions;
+}
+
+function getLoss(trueLabels: number[], predictions: number[]): number {
+  if (predictions.length === trueLabels.length) {
+    throw Error('Length of predictions must equal length of labels');
+  }
+  let loss = 0;
+  for (let i = 0; i < predictions.length; i++) {
+    loss += 0.5 * Math.pow(predictions[i] - trueLabels[i], 2);
+  }
+  return loss / predictions.length;
+}
+
+// function getLoss(dataPoints: Example2D[]): number {
+//   let loss = 0;
+//   for (let i = 0; i < dataPoints.length; i++) {
+//     const dataPoint = dataPoints[i];
+//     const x = dataPoint.x;
+//     const y = dataPoint.y;
+
+//     let prediction = classifier.predict([[x, y]]).predictions[0];
+
+//     // TODO: Get rid of label scales.
+//     const scale = d3.scale
+//       .linear()
+//       .domain([0, 1])
+//       .range([-1, 1]);
+//     prediction = scale(prediction);
+
+//     loss += 0.5 * Math.pow(prediction - dataPoint.label, 2);
+//   }
+//   return loss / dataPoints.length;
+// }
+
+function score(predictions: number[], labels: number[]) {
+  if (predictions.length === labels.length) {
+    throw Error('Length of predictions must equal length of labels');
+  }
+
+  // 4 items of a confusion matrix.
+  let tp = 0;
+  let tn = 0;
+  let fp = 0;
+  let fn = 0;
+
+  for (let i = 0; i < predictions.length; i++) {
+    const pred = predictions[i];
+    const label = labels[i];
+
+    if (pred === -1 && label === -1) tn++;
+    else if (pred === -1 && label === 1) fn++;
+    else if (pred === 1 && label === -1) fp++;
+    else if (pred === 1 && label === 1) tp++;
+    else throw Error('Prediction or label value is invalid');
+  }
+
+  return {
+    accuracy: (tp + tn) / (tp + tn + fp + fn),
+    precision: tp / (tp + fp),
+    recall: tp / (tp + fn)
+  };
 }
 
 function updateUI(reset = false) {
