@@ -31,6 +31,7 @@ const NUM_SHADES = 30;
  * using an svg overlayed on top of the canvas heatmap.
  */
 export class HeatMap {
+  // Default settings.
   private settings: HeatMapSettings = {
     showAxes: false,
     noSvg: false
@@ -179,10 +180,10 @@ export class HeatMap {
       return;
     }
 
-    const flattenedData = data.reduce((acc, val) => acc.concat(val), []);
+    // TODO: Get rid of this.
     const labelScale = d3.scale
       .linear()
-      .domain([d3.min(flattenedData), d3.max(flattenedData)])
+      .domain([0, 1])
       .range([-1, 1]);
 
     const dx = data[0].length;
@@ -200,6 +201,7 @@ export class HeatMap {
 
     for (let y = 0, p = -1; y < dy; ++y) {
       for (let x = 0; x < dx; ++x) {
+        // TODO: Change this.
         let value = data ? labelScale(data[x][y]) : 0;
         if (discretize) {
           value = (value >= 0 ? 1 : -1);
@@ -233,7 +235,7 @@ export class HeatMap {
     selection
       .enter()
       .append('circle')
-      .attr('r', 4);
+      .attr('r', 3);
 
     // Update points to be in the correct position.
     selection
