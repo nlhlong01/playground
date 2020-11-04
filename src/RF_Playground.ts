@@ -22,19 +22,22 @@ import Worker from 'worker-loader!./train.worker';
 
 const NUM_SAMPLES_CLASSIFY = 400;
 const NUM_SAMPLES_REGRESS = 1200;
+// Size of the heatmaps.
+const SIDE_LENGTH = 300;
 // # of points per direction.
 const DENSITY = 50;
-const NUM_VISIBLE_TREES = 20;
+const NUM_VISIBLE_EST = 16;
 
 const state = State.deserializeState();
 
 let mainBoundary: number[][];
 let estimatorBoundaries: number[][][];
 
-// Plot the main heatmap.
 const xDomain: [number, number] = [-6, 6];
+
+// Plot the main heatmap.
 const mainHeatMap = new HeatMap(
-  300,
+  SIDE_LENGTH,
   DENSITY,
   xDomain,
   xDomain,
@@ -44,19 +47,19 @@ const mainHeatMap = new HeatMap(
 
 // Plot the tree heatmaps.
 const estimatorHeatMaps: HeatMap[] = [];
-for (let i = 0; i < NUM_VISIBLE_TREES; i++) {
+for (let i = 0; i < NUM_VISIBLE_EST; i++) {
   const estimatorHeatMapsContainer = d3
     .select('.estimator-heatmaps-container')
     .append('div')
     .attr('id', `estimator-heatmap-${i}`)
-    .classed('mdl-cell mdl-cell--3-col', true);
+    .attr('class' , 'mdl-cell mdl-cell--3-col');
   estimatorHeatMaps.push(new HeatMap(
-    40,
+    SIDE_LENGTH / 6,
     DENSITY,
     xDomain,
     xDomain,
     estimatorHeatMapsContainer,
-    { showAxes: false, noSvg: true, pointer: true },
+    { noSvg: true },
   ));
 }
 
@@ -74,6 +77,9 @@ let trainData: Example2D[] = [];
 let testData: Example2D[] = [];
 let lossTrain: number;
 let lossTest: number;
+let accuracy: number;
+let precision: number;
+let recall: number;
 
 function makeGUI() {
   d3.select('#train-button').on('click', () => {
@@ -82,54 +88,58 @@ function makeGUI() {
     trainWorker.terminate();
     trainWorker = new Worker();
 
-    const trainingSet = trainData.map((d) => [d.x, d.y]);
-    // RF implementation does not accept negative labels
-    const labels = trainData.map((d) => d.label === -1 ? 0 : d.label);
-
     trainWorker.postMessage({
       options: options,
-      trainingSet: trainingSet,
-      labels: labels
+      trainingSet: trainData.map((d) => [d.x, d.y]),
+      // RF implementation does not accept negative labels
+      labels: trainData.map((d) => d.label === -1 ? 0 : 1)
     });
 
-    trainWorker.onmessage = (evt: MessageEvent) => {
-      classifier = RFClassifier.load(evt.data);
+    trainWorker.onmessage = (msg: MessageEvent) => {
+      classifier = RFClassifier.load(msg.data);
 
       // Final predictions of RF and predictions of estimators.
-      let predictions: number[];
+      let predictions;
       let estimatorPredictions;
+
       ({ predictions, estimatorPredictions } = classifier.predict(
         data.map((d: Example2D) => [d.x, d.y])
       ));
-
-      // Turns 0 labels back to -1
-      predictions = predictions.map((pred) => pred === 0 ? -1 : pred);
+      // Rescale and discretize all predictions.
+      const labelScale = d3.scale
+        .quantize()
+        .domain([0, 1])
+        .range([-1, 1]);
+      predictions = predictions.map(labelScale);
       estimatorPredictions = estimatorPredictions.map(
-        (est: number[]) => {
-          est.map(
-            (pred: number) => pred === 0 ? -1 : pred
-          );
-        }
+        (est: number[]) => est.map(labelScale)
       );
-
-      const voteCounts = estimatorPredictions.map((est: number[]) => {
-        est = est.map((i) => i === 0 ? -1 : 1);
-        return [
-          est.filter((i) => i === -1).length,
-          est.filter((i) => i === 1).length
-        ];
-      });
-
+      const voteCounts: number[][] = estimatorPredictions
+        .map((est: number[]) => {
+          const nNeg = est.filter((pred) => pred === -1).length;
+          return [nNeg, est.length - nNeg];
+        });
       data.forEach((d, i) => {
         d.voteCounts = voteCounts[i];
       });
-      splitTrainTest();
+
+      const splitIndex = Math.floor((data.length * state.percTrainData) / 100);
+      trainData = data.slice(0, splitIndex);
+      testData = data.slice(splitIndex);
+      lossTrain = getLoss(
+        predictions.slice(0, splitIndex),
+        trainData.map((d) => d.label)
+      );
+      lossTest = getLoss(
+        predictions.slice(splitIndex),
+        testData.map((d) => d.label)
+      );
+      ({ accuracy, precision, recall } = score(
+        predictions.slice(splitIndex),
+        testData.map((d) => d.label)
+      ));
 
       updatePoints();
-
-      // lossTrain = getLoss(trainData);
-      // lossTest = getLoss(testData);
-
       updateUI();
       isLoading(false);
     };
@@ -143,9 +153,9 @@ function makeGUI() {
   const dataThumbnails = d3.selectAll('canvas[data-dataset]');
   dataThumbnails.on('click', function () {
     const newDataset = datasets[this.dataset.dataset];
-
-    if (newDataset === state.dataset) return;
-
+    if (newDataset === state.dataset) {
+      return; // No-op.
+    }
     state.dataset = newDataset;
     dataThumbnails.classed('selected', false);
     d3.select(this).classed('selected', true);
@@ -155,7 +165,8 @@ function makeGUI() {
 
   const datasetKey = getKeyFromValue(datasets, state.dataset);
   // Select the dataset according to the current state.
-  d3.select(`canvas[data-dataset=${datasetKey}]`).classed('selected', true);
+  d3.select(`canvas[data-dataset=${datasetKey}]`)
+    .classed("selected", true);
 
   const regDataThumbnails = d3.selectAll('canvas[data-regDataset]');
   regDataThumbnails.on('click', function () {
@@ -308,9 +319,9 @@ function makeGUI() {
 }
 
 function updateDecisionBoundary(): void {
+  let estIdx: number;
   let i: number;
   let j: number;
-  let k: number;
 
   // 1 for points inside, and 0 for points outside the circle.
   const xScale = d3.scale
@@ -322,10 +333,10 @@ function updateDecisionBoundary(): void {
     .domain([DENSITY - 1, 0])
     .range(xDomain);
 
-  for (k = 0; k < NUM_VISIBLE_TREES; k++) {
-    estimatorBoundaries[k] = new Array(DENSITY);
+  for (estIdx = 0; estIdx < NUM_VISIBLE_EST; estIdx++) {
+    estimatorBoundaries[estIdx] = new Array(DENSITY);
     for (i = 0; i < DENSITY; i++) {
-      estimatorBoundaries[k][i] = new Array(DENSITY);
+      estimatorBoundaries[estIdx][i] = new Array(DENSITY);
     }
   }
 
@@ -334,73 +345,34 @@ function updateDecisionBoundary(): void {
     for (j = 0; j < DENSITY; j++) {
       const x = xScale(i);
       const y = yScale(j);
-      const { predictions, predictionValues } = classifier.predict([[x, y]]);
+      // Predict each point in the heatmap.
+      const {
+        predictions,
+        estimatorPredictions
+      } = classifier.predict([[x, y]]);
+
+      // Update prediction of that point in all boundaries.
       mainBoundary[i][j] = predictions[0];
-      for (k = 0; k < NUM_VISIBLE_TREES; k++) {
-        estimatorBoundaries[k][i][j] = predictionValues[0][k];
+      for (estIdx = 0; estIdx < NUM_VISIBLE_EST; estIdx++) {
+        estimatorBoundaries[estIdx][i][j] = estimatorPredictions[0][estIdx];
       }
     }
   }
 }
 
-function predictData(dataPoints: Example2D[]) {
-  if (!classifier) throw new Error('Classifier is not defined');
-
-  const predictions: number[] = [];
-
-  for (let i = 0; i < dataPoints.length; i++) {
-    const dataPoint = dataPoints[i];
-    const x = dataPoint.x;
-    const y = dataPoint.y;
-
-    const prediction = classifier.predict([[x, y]]).predictions[0];
-
-    // TODO: Get rid of label scales.
-    const scale = d3.scale
-      .linear()
-      .domain([0, 1])
-      .range([-1, 1]);
-
-    predictions.push(scale(prediction));
-  }
-
-  return predictions;
-}
-
-function getLoss(trueLabels: number[], predictions: number[]): number {
-  if (predictions.length === trueLabels.length) {
+function getLoss(predClass: number[], trueClass: number[]): number {
+  if (predClass.length !== trueClass.length) {
     throw Error('Length of predictions must equal length of labels');
   }
   let loss = 0;
-  for (let i = 0; i < predictions.length; i++) {
-    loss += 0.5 * Math.pow(predictions[i] - trueLabels[i], 2);
+  for (let i = 0; i < predClass.length; i++) {
+    loss += 0.5 * Math.pow(predClass[i] - trueClass[i], 2);
   }
-  return loss / predictions.length;
+  return loss / predClass.length;
 }
 
-// function getLoss(dataPoints: Example2D[]): number {
-//   let loss = 0;
-//   for (let i = 0; i < dataPoints.length; i++) {
-//     const dataPoint = dataPoints[i];
-//     const x = dataPoint.x;
-//     const y = dataPoint.y;
-
-//     let prediction = classifier.predict([[x, y]]).predictions[0];
-
-//     // TODO: Get rid of label scales.
-//     const scale = d3.scale
-//       .linear()
-//       .domain([0, 1])
-//       .range([-1, 1]);
-//     prediction = scale(prediction);
-
-//     loss += 0.5 * Math.pow(prediction - dataPoint.label, 2);
-//   }
-//   return loss / dataPoints.length;
-// }
-
-function score(predictions: number[], labels: number[]) {
-  if (predictions.length === labels.length) {
+function score(predClass: number[], trueClass: number[]) {
+  if (predClass.length !== trueClass.length) {
     throw Error('Length of predictions must equal length of labels');
   }
 
@@ -410,15 +382,15 @@ function score(predictions: number[], labels: number[]) {
   let fp = 0;
   let fn = 0;
 
-  for (let i = 0; i < predictions.length; i++) {
-    const pred = predictions[i];
-    const label = labels[i];
+  for (let i = 0; i < predClass.length; i++) {
+    const pred = predClass[i];
+    const label = trueClass[i];
 
     if (pred === -1 && label === -1) tn++;
     else if (pred === -1 && label === 1) fn++;
     else if (pred === 1 && label === -1) fp++;
     else if (pred === 1 && label === 1) tp++;
-    else throw Error('Prediction or label value is invalid');
+    else throw Error('Predicted or true class value is invalid');
   }
 
   return {
@@ -435,13 +407,15 @@ function updateUI(reset = false) {
     map.updateBackground(estimatorBoundaries[idx], state.discretize);
   });
 
-  function humanReadable(n: number): string {
-    return n.toFixed(3);
-  }
+  const updateMetric = (selector: string, value: number): void => {
+    d3.select(selector).text(value.toFixed(3));
+  };
 
-  // Update loss and iteration number.
-  d3.select('#loss-train').text(humanReadable(lossTrain));
-  d3.select('#loss-test').text(humanReadable(lossTest));
+  updateMetric('#loss-train', lossTrain);
+  updateMetric('#loss-test', lossTest);
+  updateMetric('#accuracy', accuracy);
+  updateMetric('#precision', precision);
+  updateMetric('#recall', recall);
 }
 
 /* Reset the learning progress */
@@ -463,16 +437,29 @@ function reset(onStartup = false) {
   classifier = new RFClassifier(options);
   lossTest = 0;
   lossTrain = 0;
+  accuracy = 0;
+  precision = 0;
+  recall = 0;
   mainBoundary = [];
-  estimatorBoundaries = new Array(NUM_VISIBLE_TREES).fill([]);
+  estimatorBoundaries = new Array(NUM_VISIBLE_EST).fill([]);
+  // mainBoundary = new Array(DENSITY);
+  // estimatorBoundaries = new Array(NUM_VISIBLE_EST);
+  // for (let estIdx = 0; estIdx < NUM_VISIBLE_EST; estIdx++) {
+  //   estimatorBoundaries[estIdx] = new Array(DENSITY);
+  //   for (let i = 0; i < DENSITY; i++) {
+  //     estimatorBoundaries[estIdx][i] = new Array(DENSITY);
+  //     mainBoundary[i] = new Array(DENSITY);
+  //   }
+  // }
   data.forEach((d) => {
     delete d.voteCounts;
   });
-  splitTrainTest();
-  updatePoints();
+  const splitIndex = Math.floor((data.length * state.percTrainData) / 100);
+  trainData = data.slice(0, splitIndex);
+  testData = data.slice(splitIndex);
 
   state.serialize();
-
+  updatePoints();
   updateUI(true);
 }
 
@@ -533,7 +520,9 @@ function generateData(firstTime = false) {
   data = generator(numSamples, state.noise / 100);
   // Shuffle the data in-place.
   shuffle(data);
-  splitTrainTest();
+  const splitIndex = Math.floor((data.length * state.percTrainData) / 100);
+  trainData = data.slice(0, splitIndex);
+  testData = data.slice(splitIndex);
 
   updatePoints();
 }
@@ -541,12 +530,6 @@ function generateData(firstTime = false) {
 function updatePoints() {
   mainHeatMap.updatePoints(trainData);
   mainHeatMap.updateTestPoints(state.showTestData ? testData : []);
-}
-
-function splitTrainTest() {
-  const splitIndex = Math.floor((data.length * state.percTrainData) / 100);
-  trainData = data.slice(0, splitIndex);
-  testData = data.slice(splitIndex);
 }
 
 function isLoading(loading: boolean) {

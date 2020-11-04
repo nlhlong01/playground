@@ -75,9 +75,9 @@ limitations under the License.
           </p>
         </div> -->
         <div class="ui-percTrainData">
-          <label for="percTrainData">training data:&nbsp;&nbsp;<span class="value">XX</span>%</label>
+          <label for="percTrainData">training data / data set:&nbsp;&nbsp;<span class="value">XX</span>%</label>
           <p class="slider">
-            <input class="mdl-slider mdl-js-slider" type="range" id="percTrainData" min="10" max="90" step="10">
+            <input class="mdl-slider mdl-js-slider" type="range" id="percTrainData" min="70" max="80" step="1">
           </p>
         </div>
         <div class="ui-noise">
@@ -95,15 +95,6 @@ limitations under the License.
     <div class="main-column">
       <h4><span>Output</span></h4>
 
-      <div class="metrics">
-        <div class="output-stats ui-percTrainData">
-          <span>Test loss:&nbsp;&nbsp;</span><span class="value" id="loss-test"></span>
-        </div>
-        <div class="output-stats train">
-          <span>Training loss</span>&nbsp;&nbsp;<span class="value" id="loss-train"></span>
-        </div>
-      </div>
-
       <div class="predictions" style="display: flex;">
         <div>
           <div>Predictions:</div>
@@ -116,18 +107,18 @@ limitations under the License.
           </div>
         </div>
         <div>
-          <div style="display: block;">Predictions of the first 20 trees:</div>
+          <div>Predictions of 20 random trees:</div>
           <div class="estimator-heatmaps-container mdl-grid">
           </div>
         </div>
       </div>
 
-      <div class="color-scale" style="display: flex; align-items:center;">
+      <div class="color-scale">
         <!-- Gradient color scale -->
-        <div class="label" style="width:105px; margin-right: 10px">
-          Colors shows data, neuron and weight values.
+        <div class="label" style="text-align: center;">
+          Colors show data values.
         </div>
-        <span>
+        <div style="text-align: center;">
           <svg width="150" height="30" id="colormap">
             <defs>
               <linearGradient id="gradient" x1="0%" y1="100%" x2="100%" y2="100%">
@@ -140,7 +131,29 @@ limitations under the License.
               <rect width="144" height="10" style="fill: url('#gradient');"></rect>
             </g>
           </svg>
-        </span>
+        </div>
+      </div>
+
+      <div class="metrics">
+        <div class="score">
+          <div class="output-stats">
+            <span>Test loss:&nbsp;&nbsp;</span><span class="value" id="loss-test"></span>
+          </div>
+          <div class="output-stats">
+            <span>Training loss:</span>&nbsp;&nbsp;<span class="value" id="loss-train"></span>
+          </div>
+        </div>
+        <div class="confusion-matrix">
+          <div class="output-stats">
+            <span>Accuracy:</span>&nbsp;&nbsp;<span class="value" id="accuracy"></span>
+          </div>
+          <div class="output-stats">
+            <span>Precision:</span>&nbsp;&nbsp;<span class="value" id="precision"></span>
+          </div>
+          <div class="output-stats">
+            <span>Recall:</span>&nbsp;&nbsp;<span class="value" id="recall"></span>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -162,7 +175,7 @@ limitations under the License.
         <p class="select">
           <select id="problem">
             <option value="classification">Classification</option>
-            <option value="regression">Regression</option>
+            <!-- <option value="regression">Regression</option> -->
           </select>
         </p>
       </div>
