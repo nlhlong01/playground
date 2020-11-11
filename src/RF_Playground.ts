@@ -8,7 +8,7 @@ import {
   getKeyFromValue,
   Problem
 } from './state';
-import { DataGenerator, Example2D, shuffle } from './dataset';
+import { DataGenerator, Example2D, shuffle, isValid } from './dataset';
 import 'seedrandom';
 // TODO: Bring this file to the same folder.
 import {
@@ -73,6 +73,7 @@ let trainWorker: Worker;
 let options: ClassifierOptions;
 let classifier: RFClassifier;
 let data: Example2D[] = [];
+let uploadedData: Example2D[] = [];
 let trainData: Example2D[] = [];
 let testData: Example2D[] = [];
 let lossTrain: number;
@@ -81,6 +82,9 @@ let accuracy: number;
 let precision: number;
 let recall: number;
 
+/**
+ * Prepares the UI on startup.
+ */
 function makeGUI() {
   d3.select('#train-button').on('click', () => {
     isLoading(true);
@@ -123,21 +127,14 @@ function makeGUI() {
         d.voteCounts = voteCounts[i];
       });
 
-      const splitIndex = Math.floor((data.length * state.percTrainData) / 100);
-      trainData = data.slice(0, splitIndex);
-      testData = data.slice(splitIndex);
-      lossTrain = getLoss(
-        predictions.slice(0, splitIndex),
-        trainData.map((d) => d.label)
-      );
-      lossTest = getLoss(
-        predictions.slice(splitIndex),
-        testData.map((d) => d.label)
-      );
-      ({ accuracy, precision, recall } = score(
-        predictions.slice(splitIndex),
-        testData.map((d) => d.label)
-      ));
+      [trainData, testData] = splitTrainTest(data);
+      const [trainPredictions, testPredictions] = splitTrainTest(predictions);
+      const labels = data.map((d) => d.label);
+      const [trainLabels, testLabels] = splitTrainTest(labels);
+
+      lossTrain = getLoss(trainPredictions, trainLabels);
+      lossTest = getLoss(testPredictions, testLabels);
+      ({ accuracy, precision, recall } = score(testPredictions, testLabels));
 
       updatePoints();
       updateUI();
@@ -186,21 +183,51 @@ function makeGUI() {
   d3.select(`canvas[data-regDataset=${regDatasetKey}]`)
     .classed('selected', true);
 
+  d3.select('#file-input')
+    .on('input', async function() {
+      const file = this.files[0];
+      if (file.type !== 'application/json') {
+        this.value = '';
+        alert('The uploaded file is not a JSON file.');
+        return;
+      }
+      try {
+        uploadedData = JSON.parse(await file.text());
+        if (!isValid(uploadedData)) {
+          this.value = '';
+          uploadedData = [];
+          throw new Error('The uploaded file does not have a valid format');
+        }
+        d3.select('#file-name').text(file.name);
+      } catch (err) {
+        alert('The uploaded file does not have a valid format.');
+      }
+    });
+
+  d3.select('#file-select')
+    .on('click', () => {
+      if (uploadedData.length === 0) return;
+      data = uploadedData;
+      [trainData, testData] = splitTrainTest(data);
+      updatePoints();
+      reset();
+    });
+
   /* Main Column */
   // Heat maps of the esimators.
-  estimatorHeatMaps.forEach((map, idx) => {
-    d3.select(`#estimator-heatmap-${idx} canvas`)
+  for (let i = 0; i < NUM_VISIBLE_EST; i++) {
+    d3.select(`#estimator-heatmap-${i} canvas`)
       .style('border', '2px solid black')
       .on('mouseenter', () => {
         mainHeatMap.updateBackground(
-          estimatorBoundaries[idx],
+          estimatorBoundaries[i],
           state.discretize
         );
       })
       .on('mouseleave', () => {
         mainHeatMap.updateBackground(mainBoundary, state.discretize);
       });
-  });
+  }
 
   /* Output Column */
   // Configure the number of trees
@@ -275,7 +302,7 @@ function makeGUI() {
     state.percTrainData = this.value;
     d3.select("label[for='percTrainData'] .value")
       .text(this.value);
-    generateData();
+    // generateData();
     reset();
   });
   percTrain.property('value', state.percTrainData);
@@ -360,6 +387,11 @@ function updateDecisionBoundary(): void {
   }
 }
 
+/**
+ * Compute the average mean square error of the predicted values.
+ * @param predClass Correct target value.
+ * @param trueClass Estimated target value.
+ */
 function getLoss(predClass: number[], trueClass: number[]): number {
   if (predClass.length !== trueClass.length) {
     throw Error('Length of predictions must equal length of labels');
@@ -371,6 +403,11 @@ function getLoss(predClass: number[], trueClass: number[]): number {
   return loss / predClass.length;
 }
 
+/**
+ * Compute classification metrics.
+ * @param predClass Correct target value.
+ * @param trueClass Estimated target value.
+ */
 function score(predClass: number[], trueClass: number[]) {
   if (predClass.length !== trueClass.length) {
     throw Error('Length of predictions must equal length of labels');
@@ -400,6 +437,10 @@ function score(predClass: number[], trueClass: number[]) {
   };
 }
 
+/**
+ * Update all heat maps and metrics.
+ * @param reset True when called in reset()
+ */
 function updateUI(reset = false) {
   if (!reset) updateDecisionBoundary();
   mainHeatMap.updateBackground(mainBoundary, state.discretize);
@@ -418,7 +459,9 @@ function updateUI(reset = false) {
   updateMetric('#recall', recall);
 }
 
-/* Reset the learning progress */
+/**
+ * @param reset True when called on startup.
+ */
 function reset(onStartup = false) {
   if (!onStartup) {
     trainWorker.terminate();
@@ -454,9 +497,7 @@ function reset(onStartup = false) {
   data.forEach((d) => {
     delete d.voteCounts;
   });
-  const splitIndex = Math.floor((data.length * state.percTrainData) / 100);
-  trainData = data.slice(0, splitIndex);
-  testData = data.slice(splitIndex);
+  [trainData, testData] = splitTrainTest(data);
 
   state.serialize();
   updatePoints();
@@ -499,7 +540,6 @@ function drawDatasetThumbnails() {
   }
 }
 
-/* Generate data and display in the heatmap. */
 function generateData(firstTime = false) {
   if (!firstTime) {
     // Change the seed.
@@ -520,27 +560,44 @@ function generateData(firstTime = false) {
   data = generator(numSamples, state.noise / 100);
   // Shuffle the data in-place.
   shuffle(data);
-  const splitIndex = Math.floor((data.length * state.percTrainData) / 100);
-  trainData = data.slice(0, splitIndex);
-  testData = data.slice(splitIndex);
+  [trainData, testData] = splitTrainTest(data);
 
   updatePoints();
 }
 
+/**
+ * Split the input array into 2 chunks by an index determined by the selected
+ * percentage of train data.
+ * @param arr
+ */
+function splitTrainTest(arr: any[]): any[][] {
+  const splitIndex = Math.floor((arr.length * state.percTrainData) / 100);
+  return [arr.slice(0, splitIndex) , arr.slice(splitIndex)];
+}
+
+/**
+ * Redraw data points on the main heat map.
+ */
 function updatePoints() {
   mainHeatMap.updatePoints(trainData);
   mainHeatMap.updateTestPoints(state.showTestData ? testData : []);
 }
 
+/**
+ * Shows busy indicators in the UI as something is running in the background.
+ * They include making all heatmaps opaque and showing a progress indicator next
+ * to the cursor.
+ * @param {boolean} loading True if something is running in the background
+ */
 function isLoading(loading: boolean) {
-  d3.selectAll('*')
-    .style('cursor', loading ? 'progress' : null);
   d3.select('#main-heatmap canvas')
     .style('opacity', loading ? 0.2 : 1);
   d3.select('#main-heatmap svg')
     .style('opacity', loading ? 0.2 : 1);
   d3.selectAll('.estimator-heatmaps-container canvas')
     .style('opacity', loading ? 0.2 : 1);
+  d3.selectAll('*')
+    .style('cursor', loading ? 'progress' : null);
 }
 
 drawDatasetThumbnails();
