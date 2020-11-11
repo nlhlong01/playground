@@ -31,24 +31,17 @@ const NUM_SHADES = 30;
  * using an svg overlayed on top of the canvas heatmap.
  */
 export class HeatMap {
+  // Default settings.
   private settings: HeatMapSettings = {
     showAxes: false,
     noSvg: false
   };
-
   private xScale: d3.scale.Linear<number, number>;
-
   private yScale: d3.scale.Linear<number, number>;
-
   private numSamples: number;
-
   private color;
-
   private canvas;
-
   private svg;
-
-  private boundary: number[][];
 
   constructor(
     width: number,
@@ -161,10 +154,6 @@ export class HeatMap {
     }
   }
 
-  getBoundary(): number[][] {
-    return this.boundary;
-  }
-
   updateTestPoints(points: Example2D[]): void {
     if (this.settings.noSvg) {
       throw Error("Can't add points since noSvg=true");
@@ -183,7 +172,6 @@ export class HeatMap {
     const canvas = this.canvas.node();
     const context = canvas.getContext('2d');
     context.clearRect(0, 0, canvas.width, canvas.height);
-    this.boundary = [];
   }
 
   updateBackground(data: number[][], discretize: boolean): void {
@@ -192,12 +180,10 @@ export class HeatMap {
       return;
     }
 
-    this.boundary = data;
-
-    const flattenedData = data.reduce((acc, val) => acc.concat(val), []);
+    // TODO: Get rid of this.
     const labelScale = d3.scale
       .linear()
-      .domain([d3.min(flattenedData), d3.max(flattenedData)])
+      .domain([0, 1])
       .range([-1, 1]);
 
     const dx = data[0].length;
@@ -215,6 +201,7 @@ export class HeatMap {
 
     for (let y = 0, p = -1; y < dy; ++y) {
       for (let x = 0; x < dx; ++x) {
+        // TODO: Change this.
         let value = data ? labelScale(data[x][y]) : 0;
         if (discretize) {
           value = (value >= 0 ? 1 : -1);
@@ -248,7 +235,7 @@ export class HeatMap {
     selection
       .enter()
       .append('circle')
-      .attr('r', 4);
+      .attr('r', 3);
 
     // Update points to be in the correct position.
     selection
