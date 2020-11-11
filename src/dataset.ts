@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import * as d3 from "d3";
+import { Schema, Validator } from 'jsonschema';
 
 /**
  * A two dimensional example: x and y coordinates with the label.
@@ -29,6 +30,39 @@ type Point = {
   x: number;
   y: number;
 };
+
+const schema: Schema = {
+  type: 'array',
+  maxItems: 1000,
+  items: {
+    type: 'object',
+    required: ['x', 'y', 'label'],
+    properties: {
+      x: {
+        type: 'number',
+        minimum: -6,
+        maximum: 6
+      },
+      y: {
+        type: 'number',
+        minimum: -6,
+        maximum: 6
+      },
+      label: {
+        enum: [-1, 1]
+      }
+    }
+  }
+};
+
+/**
+ * Check if the JSON data is in valid format based on the predefined schema.
+ * @param data input data.
+ * @returns {boolean} true if the data is valid.
+ */
+export function isValid(data: any): boolean {
+  return new Validator().validate(data, schema).valid;
+}
 
 /**
  * Shuffles the array using Fisher-Yates algorithm. Uses the seedrandom

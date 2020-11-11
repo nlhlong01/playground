@@ -39,55 +39,61 @@ limitations under the License.
   <div id="main-part" class="l--page">
     <!--  Data Column-->
     <div class="side-column">
-      <h4>
-        <span>Data</span>
-      </h4>
-      <div class="ui-dataset">
-        <p>Which dataset do you want to use?</p>
-        <div class="dataset-list">
-          <div class="dataset" title="Circle">
-            <canvas class="data-thumbnail" data-dataset="circle"></canvas>
+      <div class="generate-data">
+        <h4><span>Data</span></h4>
+        <div class="ui-dataset">
+          <p>Generate data</p>
+          <div class="dataset-list">
+            <div class="dataset" title="Circle">
+              <canvas class="data-thumbnail" data-dataset="circle"></canvas>
+            </div>
+            <div class="dataset" title="Exclusive or">
+              <canvas class="data-thumbnail" data-dataset="xor"></canvas>
+            </div>
+            <div class="dataset" title="Gaussian">
+              <canvas class="data-thumbnail" data-dataset="gauss"></canvas>
+            </div>
+            <div class="dataset" title="Spiral">
+              <canvas class="data-thumbnail" data-dataset="spiral"></canvas>
+            </div>
+            <div class="dataset" title="Plane">
+              <canvas class="data-thumbnail" data-regDataset="reg-plane"></canvas>
+            </div>
+            <div class="dataset" title="Multi gaussian">
+              <canvas class="data-thumbnail" data-regDataset="reg-gauss"></canvas>
+            </div>
           </div>
-          <div class="dataset" title="Exclusive or">
-            <canvas class="data-thumbnail" data-dataset="xor"></canvas>
+        </div>
+        <div>
+          <div class="ui-percTrainData">
+            <label for="percTrainData">training data ratio:&nbsp;&nbsp;<span class="value">XX</span>%</label>
+            <p class="slider">
+              <input class="mdl-slider mdl-js-slider" type="range" id="percTrainData" min="10" max="90" step="10">
+            </p>
           </div>
-          <div class="dataset" title="Gaussian">
-            <canvas class="data-thumbnail" data-dataset="gauss"></canvas>
+          <div class="ui-noise">
+            <label for="noise">Noise:&nbsp;&nbsp;<span class="value">XX</span></label>
+            <p class="slider">
+              <input class="mdl-slider mdl-js-slider" type="range" id="noise" min="0" max="50" step="5">
+            </p>
           </div>
-          <div class="dataset" title="Spiral">
-            <canvas class="data-thumbnail" data-dataset="spiral"></canvas>
-          </div>
-          <div class="dataset" title="Plane">
-            <canvas class="data-thumbnail" data-regDataset="reg-plane"></canvas>
-          </div>
-          <div class="dataset" title="Multi gaussian">
-            <canvas class="data-thumbnail" data-regDataset="reg-gauss"></canvas>
-          </div>
+          <button class="basic-button" id="data-regen-button" title="Regenerate data">
+            Regenerate
+          </button>
         </div>
       </div>
-      <div>
-        <!-- <div class="ui-percTrainData">
-          <label for="percTrainData">training to test data ratio:</label>
-            <select id="percTrainData">
-              <option value="70">70% / 30%</option>
-              <option value="80">80% / 20%</option>
-            </select>
-          </p>
-        </div> -->
-        <div class="ui-percTrainData">
-          <label for="percTrainData">training data / data set:&nbsp;&nbsp;<span class="value">XX</span>%</label>
-          <p class="slider">
-            <input class="mdl-slider mdl-js-slider" type="range" id="percTrainData" min="70" max="80" step="1">
-          </p>
-        </div>
-        <div class="ui-noise">
-          <label for="noise">Noise:&nbsp;&nbsp;<span class="value">XX</span></label>
-          <p class="slider">
-            <input class="mdl-slider mdl-js-slider" type="range" id="noise" min="0" max="50" step="5">
-          </p>
-        </div>
-        <button class="basic-button" id="data-regen-button" title="Regenerate data">
-          Regenerate
+
+      <hr>
+
+      <div class="upload-data">
+        <p>Upload your own dataset</p>
+        <label for="file-input" class="basic-button" style="width: auto; text-align: center;">
+          Choose file
+        </label>
+        <input type="file" id="file-input" accept=".json" style="display: none; width: 100%;">
+        <p id='file-name'>No file chosen</p>
+        <button class="basic-button" id="file-select">
+          Use dataset
         </button>
       </div>
     </div>
@@ -107,7 +113,7 @@ limitations under the License.
           </div>
         </div>
         <div>
-          <div>Predictions of 20 random trees:</div>
+          <div>Predictions of 16 random trees:</div>
           <div class="estimator-heatmaps-container mdl-grid">
           </div>
         </div>
