@@ -10,11 +10,10 @@ import {
 } from './state';
 import { DataGenerator, Example2D, shuffle, isValid } from './dataset';
 import 'seedrandom';
-// TODO: Bring this file to the same folder.
 import {
-  RandomForestClassifier as RFClassifier
-} from '../../random-forest/src/RandomForestClassifier';
-import { ClassifierOptions } from './ml-random-forest';
+  CustomRandomForestClassifier as RFClassifier
+} from './RandomForest/classifier';
+import { ClassifierOptions } from './RandomForest/ml-random-forest';
 import './styles.css';
 import 'material-design-lite';
 import 'material-design-lite/dist/material.indigo-blue.min.css';
@@ -104,9 +103,8 @@ function makeGUI() {
 
       // Final predictions of RF and predictions of estimators.
       let predictions;
-      let estimatorPredictions;
-
-      ({ predictions, estimatorPredictions } = classifier.predict(
+      let predictionValues;
+      ({ predictions, predictionValues } = classifier.predict(
         data.map((d: Example2D) => [d.x, d.y])
       ));
       // Rescale and discretize all predictions.
@@ -115,10 +113,10 @@ function makeGUI() {
         .domain([0, 1])
         .range([-1, 1]);
       predictions = predictions.map(labelScale);
-      estimatorPredictions = estimatorPredictions.map(
+      predictionValues = predictionValues.map(
         (est: number[]) => est.map(labelScale)
       );
-      const voteCounts: number[][] = estimatorPredictions
+      const voteCounts: number[][] = predictionValues
         .map((est: number[]) => {
           const nNeg = est.filter((pred) => pred === -1).length;
           return [nNeg, est.length - nNeg];
@@ -196,7 +194,7 @@ function makeGUI() {
         if (!isValid(uploadedData)) {
           this.value = '';
           uploadedData = [];
-          throw new Error('The uploaded file does not have a valid format');
+          throw Error('The uploaded file does not have a valid format');
         }
         d3.select('#file-name').text(file.name);
       } catch (err) {
@@ -375,20 +373,20 @@ function updateDecisionBoundary(): void {
       // Predict each point in the heatmap.
       const {
         predictions,
-        estimatorPredictions
+        predictionValues
       } = classifier.predict([[x, y]]);
 
       // Update prediction of that point in all boundaries.
       mainBoundary[i][j] = predictions[0];
       for (estIdx = 0; estIdx < NUM_VISIBLE_EST; estIdx++) {
-        estimatorBoundaries[estIdx][i][j] = estimatorPredictions[0][estIdx];
+        estimatorBoundaries[estIdx][i][j] = predictionValues[0][estIdx];
       }
     }
   }
 }
 
 /**
- * Compute the average mean square error of the predicted values.
+ * Computes the average mean square error of the predicted values.
  * @param predClass Correct target value.
  * @param trueClass Estimated target value.
  */
@@ -475,7 +473,7 @@ function reset(onStartup = false) {
     treeOptions: { maxDepth: state.maxDepth },
     useSampleBagging: true,
     replacement: false,
-    selectionMethod: 'mean',
+    selectionMethod: 'mean'
   };
   classifier = new RFClassifier(options);
   lossTest = 0;

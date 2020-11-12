@@ -11,7 +11,7 @@ export type ClassifierOptions = {
 };
 
 export declare class RandomForestClassifier {
-  constructor(options: ClassifierOptions);
+  constructor(options: ClassifierOptions, model);
   train: (trainingset: number[][], trainingValues: number[]) => void;
   predict: (toPredict: number[][]) => number[];
 }

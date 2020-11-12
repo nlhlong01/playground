@@ -8,7 +8,7 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 module.exports = {
   context: path.resolve(__dirname, 'src'),
   entry: {
-    RandomForestPlayground: './RF_Playground.ts'
+    RandomForestPlayground: './playground.ts'
   },
   plugins: [
     new HtmlWebpackPlugin({

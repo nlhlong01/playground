@@ -26,21 +26,13 @@ type DataPoint = {
  */
 export class AppendingLineChart {
   private numLines: number;
-
   private data: DataPoint[] = [];
-
   private svg;
-
   private xScale;
-
   private yScale;
-
   private paths;
-
   private lineColors: string[];
-
   private minY = Number.MAX_VALUE;
-
   private maxY = Number.MIN_VALUE;
 
   constructor(container, lineColors: string[]) {
