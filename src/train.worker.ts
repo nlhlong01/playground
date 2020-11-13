@@ -1,6 +1,7 @@
+// import { RFClassifier } from './RandomForest/classifier';
 import {
-  CustomRandomForestClassifier as RFClassifier
-} from './RandomForest/classifier';
+  RandomForestClassifier as RFClassifier
+} from './RandomForest/RandomForestClassifier';
 
 const ctx: Worker = self as any;
 let classifier: RFClassifier;

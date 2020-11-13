@@ -11,8 +11,8 @@ import {
 import { DataGenerator, Example2D, shuffle, isValid } from './dataset';
 import 'seedrandom';
 import {
-  CustomRandomForestClassifier as RFClassifier
-} from './RandomForest/classifier';
+  RandomForestClassifier as RFClassifier
+} from './RandomForest/RandomForestClassifier';
 import { ClassifierOptions } from './RandomForest/ml-random-forest';
 import './styles.css';
 import 'material-design-lite';
@@ -473,7 +473,7 @@ function reset(onStartup = false) {
     treeOptions: { maxDepth: state.maxDepth },
     useSampleBagging: true,
     replacement: false,
-    selectionMethod: 'mean'
+    selectionMethod: 'mean',
   };
   classifier = new RFClassifier(options);
   lossTest = 0;
@@ -483,6 +483,7 @@ function reset(onStartup = false) {
   recall = 0;
   mainBoundary = [];
   estimatorBoundaries = new Array(NUM_VISIBLE_EST).fill([]);
+  // TODO: Clean this
   // mainBoundary = new Array(DENSITY);
   // estimatorBoundaries = new Array(NUM_VISIBLE_EST);
   // for (let estIdx = 0; estIdx < NUM_VISIBLE_EST; estIdx++) {
