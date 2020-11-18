@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import * as d3 from 'd3';
-import { Example2D } from './dataset';
+import { Example2D, Point } from './dataset';
 
 export interface HeatMapSettings {
   [key: string]: any;
@@ -154,14 +154,14 @@ export class HeatMap {
     }
   }
 
-  updateTestPoints(points: Example2D[]): void {
+  updateTestPoints(points: Example2D[] | Point[]): void {
     if (this.settings.noSvg) {
       throw Error("Can't add points since noSvg=true");
     }
     this.updateCircles(this.svg.select('g.test'), points);
   }
 
-  updatePoints(points: Example2D[]): void {
+  updatePoints(points: Example2D[] | Point[]): void {
     if (this.settings.noSvg) {
       throw Error("Can't add points since noSvg=true");
     }
@@ -215,7 +215,7 @@ export class HeatMap {
     context.putImageData(image, 0, 0);
   }
 
-  private updateCircles(container, points: Example2D[]) {
+  private updateCircles(container, points: Example2D[] | Point[]) {
     // Keep only points that are inside the bounds.
     const xDomain = this.xScale.domain();
     const yDomain = this.yScale.domain();
@@ -239,10 +239,10 @@ export class HeatMap {
     // Update points to be in the correct position.
     selection
       .attr({
-        cx: (d: Example2D) => this.xScale(d.x),
-        cy: (d: Example2D) => this.yScale(d.y)
+        cx: (d) => this.xScale(d.x),
+        cy: (d) => this.yScale(d.y)
       })
-      .style('fill', (d) => this.color(d.label));
+      .style('fill', (d) => d.label ? this.color(d.label) : 'red');
 
     // Remove points if the length has gone down.
     selection.exit().remove();

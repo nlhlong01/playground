@@ -26,7 +26,7 @@ export type Example2D = {
   voteCounts?: number[];
 };
 
-type Point = {
+export type Point = {
   x: number;
   y: number;
 };
@@ -86,7 +86,10 @@ export function shuffle(array: any[]): void {
   }
 }
 
-export type DataGenerator = (numSamples: number, noise: number) => Example2D[];
+export type DataGenerator = (
+  numSamples: number,
+  noise: number
+) => Example2D[] | Point[];
 
 export function classifyTwoGaussData(numSamples: number, noise: number):
 Example2D[] {
@@ -187,14 +190,13 @@ Example2D[] {
 }
 
 function regressFunc1D(f, factor = 1) {
-  return (numSamples: number, noise: number): Example2D[] => {
-    const points: Example2D[] = [];
-    const label = 1;
+  return (numSamples: number, noise: number): Point[] => {
+    const points: Point[] = [];
 
     for (let i = 0; i < numSamples; i++) {
       const x = randUniform(-6, 6);
       const y = f(x) + randUniform(-4, 4) * factor * noise;
-      points.push({ x, y, label });
+      points.push({ x, y });
     }
 
     return points;

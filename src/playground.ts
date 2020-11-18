@@ -10,7 +10,7 @@ import {
   getKeyFromValue,
   Problem
 } from './state';
-import { DataGenerator, Example2D, shuffle, isValid } from './dataset';
+import { DataGenerator, Example2D, Point, shuffle, isValid } from './dataset';
 import 'seedrandom';
 import {
   RandomForestClassifier as RFClassifier,
@@ -77,7 +77,7 @@ let options: ClassifierOptions;
 let Method;
 let rf: RFClassifier | RFRegressor;
 let isClassifier: boolean;
-let data: Example2D[] = [];
+let data: Example2D[] | Point[] = [];
 let uploadedData: Example2D[] = [];
 let trainData: Example2D[] = [];
 let testData: Example2D[] = [];
@@ -111,43 +111,43 @@ function makeGUI() {
     trainWorker.onmessage = (msg: MessageEvent) => {
       rf = Method.load(msg.data);
 
-      // Final predictions of RF and predictions of estimators.
-      let predictions;
-      let predictionValues;
-      ({ predictions, predictionValues } = rf.predict(
-        data.map((d: Example2D) => [d.x, d.y])
-      ));
-      // Rescale and discretize all predictions.
-      const labelRescale = d3.scale
-        .quantize()
-        .domain([0, 1])
-        .range([-1, 1]);
-      predictions = predictions.map(labelRescale);
-      predictionValues = predictionValues.map(
-        (est: number[]) => est.map(labelRescale)
-      );
+      // // Final predictions of RF and predictions of estimators.
+      // let predictions;
+      // let predictionValues;
+      // ({ predictions, predictionValues } = rf.predict(
+      //   data.map((d) => [d.x, d.y])
+      // ));
+      // // Rescale and discretize all predictions.
+      // const labelRescale = d3.scale
+      //   .quantize()
+      //   .domain([0, 1])
+      //   .range([-1, 1]);
+      // predictions = predictions.map(labelRescale);
+      // predictionValues = predictionValues.map(
+      //   (est: number[]) => est.map(labelRescale)
+      // );
 
-      if (isClassifier) {
-        // Count the votes for each class.
-        const voteCounts: number[][] = predictionValues
-          .map((est: number[]) => {
-            // # trees voting for class -1.
-            const nNeg = est.filter((pred) => pred === -1).length;
-            return [nNeg, est.length - nNeg];
-          });
-        data.forEach((d, i) => {
-          d.voteCounts = voteCounts[i];
-        });
+      // if (isClassifier) {
+      //   // Count the votes for each class.
+      //   const voteCounts: number[][] = predictionValues
+      //     .map((est: number[]) => {
+      //       // # trees voting for class -1.
+      //       const nNeg = est.filter((pred) => pred === -1).length;
+      //       return [nNeg, est.length - nNeg];
+      //     });
+      //   data.forEach((d, i) => {
+      //     d.voteCounts = voteCounts[i];
+      //   });
 
-        [trainData, testData] = splitTrainTest(data);
-        const [trainPredictions, testPredictions] = splitTrainTest(predictions);
-        const labels = data.map((d) => d.label);
-        const [trainLabels, testLabels] = splitTrainTest(labels);
+      //   [trainData, testData] = splitTrainTest(data);
+      //   const [trainPredictions, testPredictions] = splitTrainTest(predictions);
+      //   const labels = data.map((d) => d.label);
+      //   const [trainLabels, testLabels] = splitTrainTest(labels);
 
-        lossTrain = getLoss(trainPredictions, trainLabels);
-        lossTest = getLoss(testPredictions, testLabels);
-        ({ accuracy, precision, recall } = score(testPredictions, testLabels));
-      }
+      //   lossTrain = getLoss(trainPredictions, trainLabels);
+      //   lossTest = getLoss(testPredictions, testLabels);
+      //   ({ accuracy, precision, recall } = score(testPredictions, testLabels));
+      // }
 
       updatePoints();
       updateUI();
