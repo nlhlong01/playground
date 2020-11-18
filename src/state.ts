@@ -18,9 +18,6 @@ import * as nn from './nn';
 import * as dataset from './dataset';
 import 'seedrandom';
 
-/** Suffix added to the state when storing if a control is hidden or not. */
-const HIDE_STATE_SUFFIX = '_hide';
-
 /** A map between names and activation functions. */
 export const activations: { [key: string]: nn.ActivationFunction } = {
   relu: nn.Activations.RELU,
@@ -45,28 +42,25 @@ export const datasets: { [key: string]: dataset.DataGenerator } = {
 };
 
 /** A map between dataset names and functions that generate regression data. */
-export const regDatasets: { [key: string]: dataset.DataGenerator } = {
-  'reg-plane': dataset.regressPlane,
-  'reg-gauss': dataset.regressGaussian
+export const regDatasets1D: { [key: string]: dataset.DataGenerator } = {
+  'reg1D-linear': dataset.regressLinear,
+  'reg1D-quadr': dataset.regressQuadr,
+  'reg1D-quadrShift': dataset.regressQuadrShift,
+  'reg1D-sine': dataset.regressSine,
+  'reg1D-sigmoid': dataset.regressSigmoid,
+  'reg1D-step': dataset.regressStep
+};
+
+/** A map between dataset names and functions that generate regression data. */
+export const regDatasets2D: { [key: string]: dataset.DataGenerator } = {
+  'reg2D-plane': dataset.regressPlane,
+  'reg2D-gauss': dataset.regressGaussian
 };
 
 export function getKeyFromValue(obj: any, value: any): string {
   for (const key in obj) if (obj[key] === value) return key;
 
   return undefined;
-}
-
-function endsWith(s: string, suffix: string): boolean {
-  return s.substr(-suffix.length) === suffix;
-}
-
-function getHideProps(obj: any): string[] {
-  const result: string[] = [];
-  for (const prop in obj) {
-    if (endsWith(prop, HIDE_STATE_SUFFIX)) result.push(prop);
-  }
-
-  return result;
 }
 
 /**
@@ -84,12 +78,14 @@ export enum Type {
 
 export enum Problem {
   CLASSIFICATION,
-  REGRESSION
+  REGRESSION_1D,
+  REGRESSION_2D
 }
 
 export const problems = {
   classification: Problem.CLASSIFICATION,
-  regression: Problem.REGRESSION
+  regression1D: Problem.REGRESSION_1D,
+  regression2D: Problem.REGRESSION_2D
 };
 
 export interface Property {
@@ -101,33 +97,19 @@ export interface Property {
 // Add the GUI state.
 export class State {
   private static PROPS: Property[] = [
-    { name: 'activation', type: Type.OBJECT, keyMap: activations },
-    { name: 'regularization', type: Type.OBJECT, keyMap: regularizations },
-    { name: 'batchSize', type: Type.NUMBER },
     { name: 'dataset', type: Type.OBJECT, keyMap: datasets },
-    { name: 'regDataset', type: Type.OBJECT, keyMap: regDatasets },
-    { name: 'learningRate', type: Type.NUMBER },
-    { name: 'regularizationRate', type: Type.NUMBER },
+    { name: 'regDataset1D', type: Type.OBJECT, keyMap: regDatasets1D },
+    { name: 'regDataset2D', type: Type.OBJECT, keyMap: regDatasets2D },
     { name: 'noise', type: Type.NUMBER },
-    { name: 'networkShape', type: Type.ARRAY_NUMBER },
     { name: 'seed', type: Type.STRING },
     { name: 'showTestData', type: Type.BOOLEAN },
     { name: 'discretize', type: Type.BOOLEAN },
     { name: 'percTrainData', type: Type.NUMBER },
     { name: 'x', type: Type.BOOLEAN },
     { name: 'y', type: Type.BOOLEAN },
-    { name: 'xTimesY', type: Type.BOOLEAN },
-    { name: 'xSquared', type: Type.BOOLEAN },
-    { name: 'ySquared', type: Type.BOOLEAN },
-    { name: 'cosX', type: Type.BOOLEAN },
-    { name: 'sinX', type: Type.BOOLEAN },
-    { name: 'cosY', type: Type.BOOLEAN },
-    { name: 'sinY', type: Type.BOOLEAN },
-    { name: 'collectStats', type: Type.BOOLEAN },
     { name: 'tutorial', type: Type.STRING },
     { name: 'problem', type: Type.OBJECT, keyMap: problems },
     { name: 'initZero', type: Type.BOOLEAN },
-    { name: 'hideText', type: Type.BOOLEAN },
     { name: 'percSamples', type: Type.NUMBER },
     { name: 'nTrees', type: Type.NUMBER },
     { name: 'maxDepth', type: Type.NUMBER },
@@ -135,35 +117,18 @@ export class State {
   ];
 
   [key: string]: any;
-  learningRate = 0.03;
-  regularizationRate = 0;
   showTestData = false;
   noise = 0;
-  batchSize = 10;
   discretize = false;
   tutorial: string = null;
   percTrainData = 70;
-  activation = nn.Activations.TANH;
-  regularization: nn.RegularizationFunction = null;
   problem = Problem.CLASSIFICATION;
   initZero = false;
-  // TODO: Remove this feature
-  hideText = false;
-  collectStats = false;
-  numHiddenLayers = 1;
-  hiddenLayerControls: any[] = [];
-  networkShape: number[] = [4, 2];
   x = true;
   y = true;
-  xTimesY = false;
-  xSquared = false;
-  ySquared = false;
-  cosX = false;
-  sinX = false;
-  cosY = false;
-  sinY = false;
   dataset: dataset.DataGenerator = dataset.classifyCircleData;
-  regDataset: dataset.DataGenerator = dataset.regressPlane;
+  regDataset1D: dataset.DataGenerator = dataset.regressLinear;
+  regDataset2D: dataset.DataGenerator = dataset.regressPlane;
   seed: string;
   percSamples = 80;
   nTrees = 100;
@@ -241,10 +206,6 @@ export class State {
     });
 
     // Deserialize state properties that correspond to hiding UI controls.
-    getHideProps(map).forEach((prop) => {
-      state[prop] = map[prop] === 'true';
-    });
-    state.numHiddenLayers = state.networkShape.length;
     if (state.seed == null) {
       state.seed = Math.random().toFixed(5);
     }
@@ -272,25 +233,6 @@ export class State {
       }
       props.push(`${name}=${value}`);
     });
-    // Serialize properties that correspond to hiding UI controls.
-    getHideProps(this).forEach((prop) => {
-      props.push(`${prop}=${this[prop]}`);
-    });
     window.location.hash = props.join('&');
-  }
-
-  /** Returns all the hidden properties. */
-  getHiddenProps(): string[] {
-    const result: string[] = [];
-    for (const prop in this) {
-      if (endsWith(prop, HIDE_STATE_SUFFIX) && String(this[prop]) === 'true') {
-        result.push(prop.replace(HIDE_STATE_SUFFIX, ''));
-      }
-    }
-    return result;
-  }
-
-  setHideProperty(name: string, hidden: boolean) {
-    this[name + HIDE_STATE_SUFFIX] = hidden;
   }
 }

@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 import * as d3 from 'd3';
 import { HeatMap } from './heatmap';
 import {
   State,
   datasets,
-  regDatasets,
+  regDatasets1D,
+  regDatasets2D,
   problems,
   getKeyFromValue,
   Problem
@@ -11,8 +13,9 @@ import {
 import { DataGenerator, Example2D, shuffle, isValid } from './dataset';
 import 'seedrandom';
 import {
-  RandomForestClassifier as RFClassifier
-} from './RandomForest/RandomForestClassifier';
+  RandomForestClassifier as RFClassifier,
+  RandomForestRegression as RFRegressor
+} from './RandomForest/index';
 import { ClassifierOptions } from './RandomForest/ml-random-forest';
 import './styles.css';
 import 'material-design-lite';
@@ -20,7 +23,8 @@ import 'material-design-lite/dist/material.indigo-blue.min.css';
 import Worker from 'worker-loader!./train.worker';
 
 const NUM_SAMPLES_CLASSIFY = 400;
-const NUM_SAMPLES_REGRESS = 1200;
+const NUM_SAMPLES_REGRESS_1D = 200;
+const NUM_SAMPLES_REGRESS_2D = 800;
 // Size of the heatmaps.
 const SIDE_LENGTH = 300;
 // # of points per direction.
@@ -70,7 +74,9 @@ const colorScale = d3.scale
 
 let trainWorker: Worker;
 let options: ClassifierOptions;
-let classifier: RFClassifier;
+let Method;
+let rf: RFClassifier | RFRegressor;
+let isClassifier: boolean;
 let data: Example2D[] = [];
 let uploadedData: Example2D[] = [];
 let trainData: Example2D[] = [];
@@ -87,6 +93,10 @@ let recall: number;
 function makeGUI() {
   d3.select('#train-button').on('click', () => {
     isLoading(true);
+    const labelScale = d3.scale
+      .linear()
+      .domain([-1, 1])
+      .range([0, 1]);
 
     trainWorker.terminate();
     trainWorker = new Worker();
@@ -94,45 +104,50 @@ function makeGUI() {
     trainWorker.postMessage({
       options: options,
       trainingSet: trainData.map((d) => [d.x, d.y]),
-      // RF implementation does not accept negative labels
-      labels: trainData.map((d) => d.label === -1 ? 0 : 1)
+      labels: trainData.map((d) => labelScale(d.label)),
+      isClassifier: isClassifier
     });
 
     trainWorker.onmessage = (msg: MessageEvent) => {
-      classifier = RFClassifier.load(msg.data);
+      rf = Method.load(msg.data);
 
       // Final predictions of RF and predictions of estimators.
       let predictions;
       let predictionValues;
-      ({ predictions, predictionValues } = classifier.predict(
+      ({ predictions, predictionValues } = rf.predict(
         data.map((d: Example2D) => [d.x, d.y])
       ));
       // Rescale and discretize all predictions.
-      const labelScale = d3.scale
+      const labelRescale = d3.scale
         .quantize()
         .domain([0, 1])
         .range([-1, 1]);
-      predictions = predictions.map(labelScale);
+      predictions = predictions.map(labelRescale);
       predictionValues = predictionValues.map(
-        (est: number[]) => est.map(labelScale)
+        (est: number[]) => est.map(labelRescale)
       );
-      const voteCounts: number[][] = predictionValues
-        .map((est: number[]) => {
-          const nNeg = est.filter((pred) => pred === -1).length;
-          return [nNeg, est.length - nNeg];
+
+      if (isClassifier) {
+        // Count the votes for each class.
+        const voteCounts: number[][] = predictionValues
+          .map((est: number[]) => {
+            // # trees voting for class -1.
+            const nNeg = est.filter((pred) => pred === -1).length;
+            return [nNeg, est.length - nNeg];
+          });
+        data.forEach((d, i) => {
+          d.voteCounts = voteCounts[i];
         });
-      data.forEach((d, i) => {
-        d.voteCounts = voteCounts[i];
-      });
 
-      [trainData, testData] = splitTrainTest(data);
-      const [trainPredictions, testPredictions] = splitTrainTest(predictions);
-      const labels = data.map((d) => d.label);
-      const [trainLabels, testLabels] = splitTrainTest(labels);
+        [trainData, testData] = splitTrainTest(data);
+        const [trainPredictions, testPredictions] = splitTrainTest(predictions);
+        const labels = data.map((d) => d.label);
+        const [trainLabels, testLabels] = splitTrainTest(labels);
 
-      lossTrain = getLoss(trainPredictions, trainLabels);
-      lossTest = getLoss(testPredictions, testLabels);
-      ({ accuracy, precision, recall } = score(testPredictions, testLabels));
+        lossTrain = getLoss(trainPredictions, trainLabels);
+        lossTest = getLoss(testPredictions, testLabels);
+        ({ accuracy, precision, recall } = score(testPredictions, testLabels));
+      }
 
       updatePoints();
       updateUI();
@@ -157,28 +172,43 @@ function makeGUI() {
     generateData();
     reset();
   });
-
   const datasetKey = getKeyFromValue(datasets, state.dataset);
   // Select the dataset according to the current state.
   d3.select(`canvas[data-dataset=${datasetKey}]`)
-    .classed("selected", true);
+    .classed('selected', true);
 
-  const regDataThumbnails = d3.selectAll('canvas[data-regDataset]');
-  regDataThumbnails.on('click', function () {
-    const newDataset = regDatasets[this.dataset.regdataset];
-    if (newDataset === state.regDataset) {
+  const regData1DThumbnails = d3.selectAll('canvas[data-regDataset1D]');
+  regData1DThumbnails.on('click', function () {
+    const newDataset = regDatasets1D[this.dataset.regdataset1d];
+    if (newDataset === state.regDataset1D) {
       return; // No-op.
     }
-    state.regDataset = newDataset;
-    regDataThumbnails.classed('selected', false);
+    state.regDataset1D = newDataset;
+    regData1DThumbnails.classed('selected', false);
     d3.select(this).classed('selected', true);
     generateData();
     reset();
   });
-
-  const regDatasetKey = getKeyFromValue(regDatasets, state.regDataset);
+  const regDataset1DKey = getKeyFromValue(regDatasets1D, state.regDataset1D);
   // Select the dataset according to the current state.
-  d3.select(`canvas[data-regDataset=${regDatasetKey}]`)
+  d3.select(`canvas[data-regDataset1D=${regDataset1DKey}]`)
+    .classed('selected', true);
+
+  const regData2DThumbnails = d3.selectAll('canvas[data-regDataset2D]');
+  regData2DThumbnails.on('click', function () {
+    const newDataset = regDatasets2D[this.dataset.regdataset2d];
+    if (newDataset === state.regDataset2D) {
+      return; // No-op.
+    }
+    state.regDataset2D = newDataset;
+    regData2DThumbnails.classed('selected', false);
+    d3.select(this).classed('selected', true);
+    generateData();
+    reset();
+  });
+  const regDataset2DKey = getKeyFromValue(regDatasets2D, state.regDataset2D);
+  // Select the dataset according to the current state.
+  d3.select(`canvas[data-regDataset2D=${regDataset2DKey}]`)
     .classed('selected', true);
 
   d3.select('#file-input')
@@ -289,6 +319,9 @@ function makeGUI() {
     state.discretize = this.checked;
     state.serialize();
     mainHeatMap.updateBackground(mainBoundary, state.discretize);
+    estimatorHeatMaps.forEach((map: HeatMap, idx: number) => {
+      map.updateBackground(estimatorBoundaries[idx], state.discretize);
+    });
   });
 
   // Check/uncheck the checbox according to the current state.
@@ -371,10 +404,7 @@ function updateDecisionBoundary(): void {
       const x = xScale(i);
       const y = yScale(j);
       // Predict each point in the heatmap.
-      const {
-        predictions,
-        predictionValues
-      } = classifier.predict([[x, y]]);
+      const { predictions, predictionValues } = rf.predict([[x, y]]);
 
       // Update prediction of that point in all boundaries.
       mainBoundary[i][j] = predictions[0];
@@ -472,10 +502,11 @@ function reset(onStartup = false) {
     maxFeatures: state.maxFeatures / 2,
     treeOptions: { maxDepth: state.maxDepth },
     useSampleBagging: true,
-    replacement: false,
-    selectionMethod: 'mean',
+    replacement: false
   };
-  classifier = new RFClassifier(options);
+  isClassifier = state.problem === Problem.CLASSIFICATION;
+  Method = isClassifier ? RFClassifier : RFRegressor;
+  rf = null;
   lossTest = 0;
   lossTrain = 0;
   accuracy = 0;
@@ -504,19 +535,23 @@ function reset(onStartup = false) {
 }
 
 function drawDatasetThumbnails() {
-  function renderThumbnail(canvas, dataGenerator: DataGenerator) {
+  const renderThumbnail = (
+    canvas,
+    dataGenerator: DataGenerator,
+    noise = 0
+  ) => {
     const w = 100;
     const h = 100;
     canvas.setAttribute('width', w);
     canvas.setAttribute('height', h);
     const context = canvas.getContext('2d');
-    const data = dataGenerator(200, 0);
+    const data = dataGenerator(200, noise);
     data.forEach((d: Example2D) => {
       context.fillStyle = colorScale(d.label);
       context.fillRect((w * (d.x + 6)) / 12, (h * (d.y + 6)) / 12, 4, 4);
     });
     d3.select(canvas.parentNode).style('display', null);
-  }
+  };
   d3.selectAll('.dataset').style('display', 'none');
 
   if (state.problem === Problem.CLASSIFICATION) {
@@ -528,12 +563,21 @@ function drawDatasetThumbnails() {
       renderThumbnail(canvas, dataGenerator);
     }
   }
-  if (state.problem === Problem.REGRESSION) {
-    for (const regDataset in regDatasets) {
+  if (state.problem === Problem.REGRESSION_1D) {
+    for (const dataset in regDatasets1D) {
       const canvas: any = document.querySelector(
-        `canvas[data-regDataset=${regDataset}]`
+        `canvas[data-regDataset1D=${dataset}]`
       );
-      const dataGenerator = regDatasets[regDataset];
+      const dataGenerator = regDatasets1D[dataset];
+      renderThumbnail(canvas, dataGenerator, 0.2);
+    }
+  }
+  if (state.problem === Problem.REGRESSION_2D) {
+    for (const dataset in regDatasets2D) {
+      const canvas: any = document.querySelector(
+        `canvas[data-regDataset2D=${dataset}]`
+      );
+      const dataGenerator = regDatasets2D[dataset];
       renderThumbnail(canvas, dataGenerator);
     }
   }
@@ -547,20 +591,24 @@ function generateData(firstTime = false) {
   }
 
   Math.seedrandom(state.seed);
-  const numSamples =
-    state.problem === Problem.REGRESSION
-      ? NUM_SAMPLES_REGRESS
-      : NUM_SAMPLES_CLASSIFY;
-  const generator =
-    state.problem === Problem.CLASSIFICATION
-      ? state.dataset
-      : state.regDataset;
+  let numSamples: number;
+  let generator: DataGenerator;
+
+  if (state.problem === Problem.CLASSIFICATION) {
+    numSamples = NUM_SAMPLES_CLASSIFY;
+    generator = state.dataset;
+  } else if (state.problem === Problem.REGRESSION_1D) {
+    numSamples = NUM_SAMPLES_REGRESS_1D;
+    generator = state.regDataset1D;
+  } else {
+    numSamples = NUM_SAMPLES_REGRESS_2D;
+    generator = state.regDataset2D;
+  }
 
   data = generator(numSamples, state.noise / 100);
   // Shuffle the data in-place.
   shuffle(data);
   [trainData, testData] = splitTrainTest(data);
-
   updatePoints();
 }
 

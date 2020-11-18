@@ -185,7 +185,6 @@ export class HeatMap {
       .linear()
       .domain([0, 1])
       .range([-1, 1]);
-
     const dx = data[0].length;
     const dy = data.length;
 
@@ -202,7 +201,7 @@ export class HeatMap {
     for (let y = 0, p = -1; y < dy; ++y) {
       for (let x = 0; x < dx; ++x) {
         // TODO: Change this.
-        let value = data ? labelScale(data[x][y]) : 0;
+        let value = labelScale(data[x][y]);
         if (discretize) {
           value = (value >= 0 ? 1 : -1);
         }
@@ -252,6 +251,11 @@ export class HeatMap {
     const hoverCard = d3.select('#hovercard');
     selection
       .on('mouseenter', (d: Example2D) => {
+        if (d.voteCounts === undefined) return;
+        if (d.voteCounts.length < 2) throw new Error(
+          'Vote counts are not valid'
+        );
+
         const container = d3.select('#main-heatmap canvas');
         const coordinates = d3.mouse(container.node());
 
@@ -262,9 +266,9 @@ export class HeatMap {
         });
 
         d3.select('#hovercard.ui-nvotes #first-class.value')
-          .text(d.voteCounts ? d.voteCounts[0] : '0');
+          .text(d.voteCounts[0]);
         d3.select('#hovercard.ui-nvotes #second-class.value')
-          .text(d.voteCounts ? d.voteCounts[1] : '0');
+          .text(d.voteCounts[1]);
       })
       .on('mouseleave', () => {
         hoverCard.style('display', 'none');

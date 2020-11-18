@@ -47,7 +47,7 @@ limitations under the License.
             <div class="dataset" title="Circle">
               <canvas class="data-thumbnail" data-dataset="circle"></canvas>
             </div>
-            <div class="dataset" title="Exclusive or">
+            <div class="dataset" title="Exclusive OR">
               <canvas class="data-thumbnail" data-dataset="xor"></canvas>
             </div>
             <div class="dataset" title="Gaussian">
@@ -56,11 +56,29 @@ limitations under the License.
             <div class="dataset" title="Spiral">
               <canvas class="data-thumbnail" data-dataset="spiral"></canvas>
             </div>
-            <div class="dataset" title="Plane">
-              <canvas class="data-thumbnail" data-regDataset="reg-plane"></canvas>
+            <div class="dataset" title="Linear">
+              <canvas class="data-thumbnail" data-regDataset1D="reg1D-linear"></canvas>
             </div>
-            <div class="dataset" title="Multi gaussian">
-              <canvas class="data-thumbnail" data-regDataset="reg-gauss"></canvas>
+            <div class="dataset" title="Quadratic">
+              <canvas class="data-thumbnail" data-regDataset1D="reg1D-quadr"></canvas>
+            </div>
+            <div class="dataset" title="Shifted Quadratic">
+              <canvas class="data-thumbnail" data-regDataset1D="reg1D-quadrShift"></canvas>
+            </div>
+            <div class="dataset" title="Sine">
+              <canvas class="data-thumbnail" data-regDataset1D="reg1D-sine"></canvas>
+            </div>
+            <div class="dataset" title="Sigmoid">
+              <canvas class="data-thumbnail" data-regDataset1D="reg1D-sigmoid"></canvas>
+            </div>
+            <div class="dataset" title="Step">
+              <canvas class="data-thumbnail" data-regDataset1D="reg1D-step"></canvas>
+            </div>
+            <div class="dataset" title="Plane">
+              <canvas class="data-thumbnail" data-regDataset2D="reg2D-plane"></canvas>
+            </div>
+            <div class="dataset" title="Multi Gaussians">
+              <canvas class="data-thumbnail" data-regDataset2D="reg2D-gauss"></canvas>
             </div>
           </div>
         </div>
@@ -166,22 +184,13 @@ limitations under the License.
     <div class="side-column">
       <h4><span>Parameters</span></h4>
 
-      <div class="ui-maxFeatures">
-        <label for="maxFeatures">Max features</label>
-        <p class="select">
-          <select id="maxFeatures">
-            <option value="1">1</option>
-            <option value="2">2</option>
-          </select>
-        </p>
-      </div>
-
       <div class="ui-problem">
         <label for="problem">Problem type</label>
         <p class="select">
           <select id="problem">
             <option value="classification">Classification</option>
-            <!-- <option value="regression">Regression</option> -->
+            <option value="regression1D">Regression 1D</option>
+            <option value="regression2D">Regression 2D</option>
           </select>
         </p>
       </div>

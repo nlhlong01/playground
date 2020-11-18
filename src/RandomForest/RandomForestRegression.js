@@ -14,7 +14,6 @@ const defaultOptions = {
   nEstimators: 50,
   treeOptions: {},
   selectionMethod: 'mean',
-  seed: 42,
   useSampleBagging: true,
   noOOB: false,
 };
