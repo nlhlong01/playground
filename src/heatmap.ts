@@ -180,11 +180,6 @@ export class HeatMap {
       return;
     }
 
-    // TODO: Get rid of this.
-    const labelScale = d3.scale
-      .linear()
-      .domain([0, 1])
-      .range([-1, 1]);
     const dx = data[0].length;
     const dy = data.length;
 
@@ -200,8 +195,7 @@ export class HeatMap {
 
     for (let y = 0, p = -1; y < dy; ++y) {
       for (let x = 0; x < dx; ++x) {
-        // TODO: Change this.
-        let value = labelScale(data[x][y]);
+        let value = data[x][y];
         if (discretize) {
           value = (value >= 0 ? 1 : -1);
         }
@@ -213,6 +207,33 @@ export class HeatMap {
       }
     }
     context.putImageData(image, 0, 0);
+  }
+
+  plot(x: number[], y: number[]) {
+    if (x.length !== y.length) throw new Error(
+      'x and y do not have the same length'
+    );
+
+    const data = [];
+    for (let i = 0; i < x.length; i++) {
+      data[i] = { x: x[i], y: y[i] };
+    }
+
+    const line = d3.svg
+      .line<{ x: number; y: number }>()
+      .x((d) => this.xScale(d.x))
+      .y((d) => this.yScale(d.y));
+
+    this.svg
+      .append('path')
+      .datum(data)
+      .attr('class', 'plot')
+      .attr('fill', 'none')
+      .attr('stroke', 'steelblue')
+      .attr('stroke-width', 1.5)
+      .attr('stroke-linejoin', 'round')
+      .attr('stroke-linecap', 'round')
+      .attr('d', line);
   }
 
   private updateCircles(container, points: Example2D[] | Point[]) {
@@ -242,7 +263,7 @@ export class HeatMap {
         cx: (d) => this.xScale(d.x),
         cy: (d) => this.yScale(d.y)
       })
-      .style('fill', (d) => d.label ? this.color(d.label) : 'red');
+      .style('fill', (d) => this.color(d.label));
 
     // Remove points if the length has gone down.
     selection.exit().remove();

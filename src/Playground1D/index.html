@@ -27,6 +27,7 @@ limitations under the License.
   <meta name="author" content="Long Nguyen">
   <title>Random Forest Playground</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto" type="text/css">
+  <link rel="stylesheet" href="bundle.css">
 </head>
 
 <body>
@@ -44,18 +45,6 @@ limitations under the License.
         <div class="ui-dataset">
           <p>Generate data</p>
           <div class="dataset-list">
-            <div class="dataset" title="Circle">
-              <canvas class="data-thumbnail" data-dataset="circle"></canvas>
-            </div>
-            <div class="dataset" title="Exclusive OR">
-              <canvas class="data-thumbnail" data-dataset="xor"></canvas>
-            </div>
-            <div class="dataset" title="Gaussian">
-              <canvas class="data-thumbnail" data-dataset="gauss"></canvas>
-            </div>
-            <div class="dataset" title="Spiral">
-              <canvas class="data-thumbnail" data-dataset="spiral"></canvas>
-            </div>
             <div class="dataset" title="Linear">
               <canvas class="data-thumbnail" data-regDataset1D="reg1D-linear"></canvas>
             </div>
@@ -73,12 +62,6 @@ limitations under the License.
             </div>
             <div class="dataset" title="Step">
               <canvas class="data-thumbnail" data-regDataset1D="reg1D-step"></canvas>
-            </div>
-            <div class="dataset" title="Plane">
-              <canvas class="data-thumbnail" data-regDataset2D="reg2D-plane"></canvas>
-            </div>
-            <div class="dataset" title="Multi Gaussians">
-              <canvas class="data-thumbnail" data-regDataset2D="reg2D-gauss"></canvas>
             </div>
           </div>
         </div>
@@ -122,7 +105,7 @@ limitations under the License.
       <div class="predictions" style="display: flex;">
         <div>
           <div>Predictions:</div>
-          <div id="main-heatmap"">
+          <div id="main-linechart"">
             <div id="hovercard" class="ui-nvotes">
               <div># of votes</div>
               <div>class&nbsp;-1:&nbsp;&nbsp;<span id="first-class" class="value"></span></div>
@@ -132,29 +115,8 @@ limitations under the License.
         </div>
         <div>
           <div>Predictions of 16 random trees:</div>
-          <div class="estimator-heatmaps-container mdl-grid">
+          <div class="tree-linecharts-container mdl-grid">
           </div>
-        </div>
-      </div>
-
-      <div class="color-scale">
-        <!-- Gradient color scale -->
-        <div class="label" style="text-align: center;">
-          Colors show data values.
-        </div>
-        <div style="text-align: center;">
-          <svg width="150" height="30" id="colormap">
-            <defs>
-              <linearGradient id="gradient" x1="0%" y1="100%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#f59322" stop-opacity="1"></stop>
-                <stop offset="50%" stop-color="#e8eaeb" stop-opacity="1"></stop>
-                <stop offset="100%" stop-color="#0877bd" stop-opacity="1"></stop>
-              </linearGradient>
-            </defs>
-            <g class="core" transform="translate(3, 0)">
-              <rect width="144" height="10" style="fill: url('#gradient');"></rect>
-            </g>
-          </svg>
         </div>
       </div>
 
@@ -184,20 +146,6 @@ limitations under the License.
     <div class="side-column">
       <h4><span>Parameters</span></h4>
 
-      <div class="ui-problem">
-        <label for="problem">Problem type</label>
-        <p class="select">
-          <select id="problem">
-            <option value="classification">Classification</option>
-            <!-- <option value="regression1D">Regression 1D</option> -->
-            <option value="regression1D">
-              <a href="regression1d.html"></a>
-            </option>
-            <option value="regression2D">Regression 2D</option>
-          </select>
-        </p>
-      </div>
-
       <div class="ui-percSamples">
         <label for="percSamples">Samples:&nbsp;&nbsp;<span class="value">XX</span>%</label>
         <p class="slider">
@@ -226,13 +174,6 @@ limitations under the License.
         <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="show-test-data">
           <input type="checkbox" id="show-test-data" class="mdl-checkbox__input" checked>
           <span class="mdl-checkbox__label label">Show test data</span>
-        </label>
-      </div>
-
-      <div class="ui-discretize">
-        <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" for="discretize">
-          <input type="checkbox" id="discretize" class="mdl-checkbox__input" checked>
-          <span class="mdl-checkbox__label label">Discretize output</span>
         </label>
       </div>
 
@@ -276,5 +217,6 @@ limitations under the License.
       </div>
     </div>
   </footer>
+  <script src="Playground1D.bundle.js"></script>
 </body>
 </html>

@@ -17,14 +17,6 @@ limitations under the License.
 import * as dataset from './dataset';
 import 'seedrandom';
 
-/** A map between dataset names and functions generating classification data. */
-export const datasets: { [key: string]: dataset.DataGenerator } = {
-  circle: dataset.classifyCircleData,
-  xor: dataset.classifyXORData,
-  gauss: dataset.classifyTwoGaussData,
-  spiral: dataset.classifySpiralData
-};
-
 /** A map between dataset names and functions that generate regression data. */
 export const regDatasets1D: { [key: string]: dataset.DataGenerator } = {
   'reg1D-linear': dataset.regressLinear,
@@ -33,12 +25,6 @@ export const regDatasets1D: { [key: string]: dataset.DataGenerator } = {
   'reg1D-sine': dataset.regressSine,
   'reg1D-sigmoid': dataset.regressSigmoid,
   'reg1D-step': dataset.regressStep
-};
-
-/** A map between dataset names and functions that generate regression data. */
-export const regDatasets2D: { [key: string]: dataset.DataGenerator } = {
-  'reg2D-plane': dataset.regressPlane,
-  'reg2D-gauss': dataset.regressGaussian
 };
 
 export function getKeyFromValue(obj: any, value: any): string {
@@ -60,18 +46,6 @@ export enum Type {
   OBJECT
 }
 
-export enum Problem {
-  CLASSIFICATION,
-  REGRESSION_1D,
-  REGRESSION_2D
-}
-
-export const problems = {
-  classification: Problem.CLASSIFICATION,
-  regression1D: Problem.REGRESSION_1D,
-  regression2D: Problem.REGRESSION_2D
-};
-
 export interface Property {
   name: string;
   type: Type;
@@ -81,18 +55,14 @@ export interface Property {
 // Add the GUI state.
 export class State {
   private static PROPS: Property[] = [
-    { name: 'dataset', type: Type.OBJECT, keyMap: datasets },
     { name: 'regDataset1D', type: Type.OBJECT, keyMap: regDatasets1D },
-    { name: 'regDataset2D', type: Type.OBJECT, keyMap: regDatasets2D },
     { name: 'noise', type: Type.NUMBER },
     { name: 'seed', type: Type.STRING },
     { name: 'showTestData', type: Type.BOOLEAN },
-    { name: 'discretize', type: Type.BOOLEAN },
     { name: 'percTrainData', type: Type.NUMBER },
     { name: 'x', type: Type.BOOLEAN },
     { name: 'y', type: Type.BOOLEAN },
     { name: 'tutorial', type: Type.STRING },
-    { name: 'problem', type: Type.OBJECT, keyMap: problems },
     { name: 'initZero', type: Type.BOOLEAN },
     { name: 'percSamples', type: Type.NUMBER },
     { name: 'nTrees', type: Type.NUMBER },
@@ -103,16 +73,12 @@ export class State {
   [key: string]: any;
   showTestData = false;
   noise = 20;
-  discretize = false;
   tutorial: string = null;
   percTrainData = 70;
-  problem = Problem.CLASSIFICATION;
   initZero = false;
   x = true;
   y = true;
-  dataset: dataset.DataGenerator = dataset.classifyCircleData;
   regDataset1D: dataset.DataGenerator = dataset.regressLinear;
-  regDataset2D: dataset.DataGenerator = dataset.regressPlane;
   seed: string;
   percSamples = 80;
   nTrees = 100;

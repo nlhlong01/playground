@@ -437,14 +437,6 @@ g.column rect {
   border-radius: 3px;
 }
 
-/*.side-column .dataset:first-of-type {
-  margin-top: 8px;
-}
-
-.side-column .dataset:last-of-type {
-  margin-bottom: 20px;
-}*/
-
 .side-column .data-thumbnail:hover {
   border: 2px solid #999;
 }
@@ -600,6 +592,7 @@ g.column rect {
 
 .color-scale {
   height: 70px;
+  display: none;
 }
 
 .metrics {
@@ -724,9 +717,7 @@ footer .links a:hover {
 }
 
 /* Material Overrides */
-
 /* Buttons */
-
 .mdl-button--fab.mdl-button--colored,
 .mdl-button--fab.mdl-button--colored:hover,
 .mdl-button--fab.mdl-button--colored:active,
@@ -736,7 +727,6 @@ footer .links a:hover {
 }
 
 /* Checkbox */
-
 .mdl-checkbox__box-outline {
   border-color: rgba(0, 0, 0, 0.5);
 }

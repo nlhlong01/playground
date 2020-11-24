@@ -2,7 +2,7 @@
 import {
   RandomForestClassifier as RFClassifier,
   RandomForestRegression as RFRegressor
-} from './RandomForest/index';
+} from 'ml-random-forest';
 
 const ctx: Worker = self as any;
 let rf;

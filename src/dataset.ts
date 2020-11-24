@@ -22,7 +22,7 @@ import { Schema, Validator } from 'jsonschema';
 export type Example2D = {
   x: number;
   y: number;
-  label: number;
+  label?: number;
   voteCounts?: number[];
 };
 
@@ -190,15 +190,13 @@ Example2D[] {
 }
 
 function regressFunc1D(f, factor = 1) {
-  return (numSamples: number, noise: number): Point[] => {
+  return (numSamples: number, noise: number): Example2D[] => {
     const points: Point[] = [];
-
     for (let i = 0; i < numSamples; i++) {
       const x = randUniform(-6, 6);
       const y = f(x) + randUniform(-4, 4) * factor * noise;
       points.push({ x, y });
     }
-
     return points;
   };
 }
