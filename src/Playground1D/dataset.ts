@@ -80,27 +80,34 @@ export type DataGenerator = (
   noise: number
 ) => Point[];
 
-function regressFunc1D(f, factor = 1) {
+function regressFunc1D(f) {
   return (numSamples: number, noise: number): Point[] => {
     const points: Point[] = [];
     for (let i = 0; i < numSamples; i++) {
-      const x = randUniform(-6, 6);
-      const y = f(x) + randUniform(-4, 4) * factor * noise;
+      let x: number;
+      let y: number;
+      let noiseY: number;
+
+      do {
+        x = randUniform(-6, 6);
+        noiseY = normalRandom() * noise;
+        y = f(x) + noiseY;
+      } while (y < -6 || y > 6);
+
       points.push({ x, y });
     }
     return points;
   };
 }
 
-export const regressLinear = regressFunc1D((x) => x, 2);
-export const regressQuadr = regressFunc1D((x) => (6 / 40) * x ** 2 - 3, 1.5);
+export const regressLinear = regressFunc1D((x) => x);
+export const regressQuadr = regressFunc1D((x) => (6 / 40) * x ** 2 - 3);
 export const regressQuadrShift = regressFunc1D(
-  (x) => (3 / 40) * x ** 2 - x / 2 - 1,
-  1.5
+  (x) => (3 / 40) * x ** 2 - x / 2 - 1
 );
-export const regressSine = regressFunc1D((x) => 2 * Math.sin(x), 1.5);
+export const regressSine = regressFunc1D((x) => 2 * Math.sin(x));
 export const regressSigmoid = regressFunc1D((x) => 5 - 5 * (1 + Math.tanh(x)));
-export const regressStep = regressFunc1D((x) => (x > 2 ? 3 : -3));
+export const regressStep = regressFunc1D((x) => x > 2 ? 3 : -3);
 
 /**
  * Returns a sample from a uniform [a, b] distribution.

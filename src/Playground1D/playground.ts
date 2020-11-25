@@ -25,16 +25,6 @@ const NUM_VISIBLE_TREES = 16;
 const state = State.deserializeState();
 
 const xDomain: [number, number] = [-6, 6];
-// Label values must be scaled before and after training since RF impl does not
-// accepts negative values.
-const inputScale = d3.scale
-  .linear()
-  .domain(xDomain)
-  .range([0, 1]);
-const outputScale = d3.scale
-  .linear()
-  .domain([0, 1])
-  .range(xDomain);
 
 // Plot the main linechart.
 const mainLineChart = new LineChart(
@@ -64,22 +54,22 @@ for (let i = 0; i < NUM_VISIBLE_TREES; i++) {
   );
 }
 
-let options = {};
+let options;
 let regressor: RFRegressor;
-let curve: Point[] = [];
+let curve: Point[];
 let treeCurves: Point[][];
-let data: Point[] = [];
-let uploadedData: Point[] = [];
-let trainData: Point[] = [];
-let testData: Point[] = [];
-let lossTrain = 0;
-let lossTest = 0;
+let data: Point[];
+let uploadedData: Point[];
+let lossTrain;
+let lossTest;
 
 /**
  * Prepares the UI on startup.
  */
 function makeGUI() {
   d3.select('#train-button').on('click', () => {
+    let pointIdx: number;
+    let treeIdx = 0;
     const xScale = d3.scale
       .linear()
       .domain([0, DENSITY - 1])
@@ -87,24 +77,29 @@ function makeGUI() {
 
     regressor = new RFRegressor(options);
     regressor.train(
-      trainData.map((d) => [d.x]),
-      trainData.map((d) => inputScale(d.y))
+      data.map((d) => [d.x]),
+      data.map((d) => d.y)
     );
 
-    for (let i = 0; i < DENSITY; i++) {
-      const x = xScale(i);
-      // const pred = regressor.predict([[x]])[0];
+    treeCurves = new Array(NUM_VISIBLE_TREES);
+    for (treeIdx = 0; treeIdx < treeCurves.length; treeIdx++) {
+      treeCurves[treeIdx] = new Array(DENSITY);
+    }
+
+    curve = new Array(DENSITY);
+    for (pointIdx = 0; pointIdx < curve.length; pointIdx++) {
+      const x = xScale(pointIdx);
       const treePredictions: number[] = regressor
         .predictionValues([[x]])
-        .to2DArray()[0]
-        .map(outputScale);
-      for (let treeIndex = 0; treeIndex < NUM_VISIBLE_TREES; treeIndex++) {
-        const y = treePredictions[i];
-        treeCurves[treeIndex][i] = { x, y };
+        .to2DArray()[0];
+      for (treeIdx = 0; treeIdx < NUM_VISIBLE_TREES; treeIdx++) {
+        const y = treePredictions[treeIdx];
+        treeCurves[treeIdx][pointIdx] = { x, y };
       }
+      // Get the final prediction based on estimators' predictions.
       const prediction: number = regressor.selection(treePredictions);
       const y = prediction;
-      curve[i] = { x, y };
+      curve[pointIdx] = { x, y };
     }
 
     d3.selectAll('path.plot').remove();
@@ -159,8 +154,7 @@ function makeGUI() {
     .on('click', () => {
       if (uploadedData.length === 0) return;
       data = uploadedData;
-      [trainData, testData] = splitTrainTest(data);
-      updatePoints();
+      mainLineChart.updatePoints(data);
       reset();
     });
 
@@ -218,14 +212,6 @@ function makeGUI() {
     reset();
   });
   maxFeatures.property('value', state.maxFeatures);
-
-  const showTestData = d3.select('#show-test-data').on('change', function () {
-    state.showTestData = this.checked;
-    state.serialize();
-    mainLineChart.updateTestPoints(state.showTestData ? testData : []);
-  });
-  // Check/uncheck the checkbox according to the current state.
-  showTestData.property('checked', state.showTestData);
 
   /* Data configurations */
   // Configure the ratio of training data to test data.
@@ -342,13 +328,14 @@ function reset() {
   lossTest = 0;
   lossTrain = 0;
 
-  curve = [];
-  treeCurves = new Array(NUM_VISIBLE_TREES).fill([]);
-
-  [trainData, testData] = splitTrainTest(data);
+  curve = new Array(NUM_SAMPLES);
+  treeCurves = new Array(NUM_VISIBLE_TREES);
+  for (let i = 0; i < treeCurves.length; i++) {
+    treeCurves[i] = new Array(DENSITY);
+  }
 
   state.serialize();
-  updatePoints();
+  mainLineChart.updatePoints(data);
   updateUI();
 }
 
@@ -365,7 +352,7 @@ function drawDatasetThumbnails() {
     const context = canvas.getContext('2d');
     const data = dataGenerator(200, noise);
     data.forEach((d: Point) => {
-      context.fillStyle = 'blue';
+      context.fillStyle = 'darkorange';
       context.fillRect((w * (d.x + 6)) / 12, (h * (-d.y + 6)) / 12, 4, 4);
     });
     d3.select(canvas.parentNode).style('display', null);
@@ -377,7 +364,7 @@ function drawDatasetThumbnails() {
       `canvas[data-regDataset1D=${dataset}]`
     );
     const dataGenerator = regDatasets1D[dataset];
-    renderThumbnail(canvas, dataGenerator, 0.2);
+    renderThumbnail(canvas, dataGenerator, 0.5);
   }
 }
 
@@ -395,26 +382,7 @@ function generateData(firstTime = false) {
   data = generator(numSamples, state.noise / 100);
   // Shuffle the data in-place.
   shuffle(data);
-  [trainData, testData] = splitTrainTest(data);
-  updatePoints();
-}
-
-/**
- * Split the input array into 2 chunks by an index determined by the selected
- * percentage of train data.
- * @param arr
- */
-function splitTrainTest(arr: any[]): any[][] {
-  const splitIndex = Math.floor((arr.length * state.percTrainData) / 100);
-  return [arr.slice(0, splitIndex) , arr.slice(splitIndex)];
-}
-
-/**
- * Redraw data points on the main heat map.
- */
-function updatePoints() {
-  mainLineChart.updatePoints(trainData);
-  mainLineChart.updateTestPoints(state.showTestData ? testData : []);
+  mainLineChart.updatePoints(data);
 }
 
 drawDatasetThumbnails();

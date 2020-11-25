@@ -613,9 +613,9 @@ g.column rect {
 }
 
 g.train circle {
-  stroke: white;
+  stroke: black;
   stroke-width: 1;
-  stroke-opacity: 0.8;
+  stroke-opacity: 0.6;
   fill-opacity: 0.9;
 }
 

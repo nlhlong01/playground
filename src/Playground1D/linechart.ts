@@ -36,9 +36,7 @@ export class LineChart {
   private xScale: d3.scale.Linear<number, number>;
   private yScale: d3.scale.Linear<number, number>;
   private numSamples: number;
-  // private canvas;
   private svg;
-  private plot;
 
   constructor(
     width: number,
@@ -76,16 +74,6 @@ export class LineChart {
       top: `-${padding}px`,
       left: `-${padding}px`
     });
-
-    // this.canvas = container
-    //   .append('canvas')
-    //   .attr('width', numSamples)
-    //   .attr('height', numSamples)
-    //   .style('width', `${width - 2 * padding}px`)
-    //   .style('height', `${height - 2 * padding}px`)
-    //   .style('position', 'absolute')
-    //   .style('top', `${padding}px`)
-    //   .style('left', `${padding}px`);
 
     this.svg = container
       .append('svg')
@@ -147,10 +135,19 @@ export class LineChart {
   }
 
   updatePlot(data: Point[]) {
-    if (data.length === 0) {
-      this.svg.select('path').remove();
-      return;
-    }
+    this.svg.select('path').remove();
+
+    // Keep only points that are inside the bounds.
+    const xDomain = this.xScale.domain();
+    const yDomain = this.yScale.domain();
+    data = data.filter(
+      (p) => (
+        p.x >= xDomain[0] &&
+        p.x <= xDomain[1] &&
+        p.y >= yDomain[0] &&
+        p.y <= yDomain[1]
+      )
+    );
 
     const line = d3.svg
       .line<{ x: number; y: number }>()
@@ -162,8 +159,8 @@ export class LineChart {
       .datum(data)
       .attr('class', 'plot')
       .attr('fill', 'none')
-      .attr('stroke', 'red')
-      .attr('stroke-width', 2)
+      .attr('stroke', 'cornflowerblue')
+      .attr('stroke-width', 3)
       .attr('stroke-linejoin', 'round')
       .attr('stroke-linecap', 'round')
       .attr('d', line);
@@ -196,7 +193,7 @@ export class LineChart {
         cx: (d) => this.xScale(d.x),
         cy: (d) => this.yScale(d.y)
       })
-      .style('fill', () => 'blue');
+      .style('fill', () => 'darkorange');
 
     // Remove points if the length has gone down.
     selection.exit().remove();

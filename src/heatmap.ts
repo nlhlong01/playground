@@ -236,6 +236,7 @@ export class HeatMap {
       .attr('d', line);
   }
 
+  // TODO: Doublecheck the type of points.
   private updateCircles(container, points: Example2D[] | Point[]) {
     // Keep only points that are inside the bounds.
     const xDomain = this.xScale.domain();
