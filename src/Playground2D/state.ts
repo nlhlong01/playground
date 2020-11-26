@@ -76,34 +76,24 @@ export class State {
     { name: 'showTestData', type: Type.BOOLEAN },
     { name: 'discretize', type: Type.BOOLEAN },
     { name: 'percTrainData', type: Type.NUMBER },
-    { name: 'x', type: Type.BOOLEAN },
-    { name: 'y', type: Type.BOOLEAN },
-    { name: 'tutorial', type: Type.STRING },
     { name: 'problem', type: Type.OBJECT, keyMap: problems },
-    { name: 'initZero', type: Type.BOOLEAN },
     { name: 'percSamples', type: Type.NUMBER },
     { name: 'nTrees', type: Type.NUMBER },
-    { name: 'maxDepth', type: Type.NUMBER },
-    { name: 'maxFeatures', type: Type.NUMBER }
+    { name: 'maxDepth', type: Type.NUMBER }
   ];
 
   [key: string]: any;
   showTestData = false;
   noise = 20;
   discretize = false;
-  tutorial: string = null;
   percTrainData = 70;
   problem = Problem.CLASSIFICATION;
-  initZero = false;
-  x = true;
-  y = true;
   dataset: dataset.DataGenerator = dataset.classifyCircleData;
   regDataset: dataset.DataGenerator = dataset.regressPlane;
   seed: string;
   percSamples = 80;
   nTrees = 100;
   maxDepth = 5;
-  maxFeatures = 1;
 
   /**
    * Deserializes the state from the url hash.
