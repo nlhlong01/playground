@@ -14,7 +14,6 @@ limitations under the License.
 ==============================================================================*/
 
 /* General Type */
-
 body {
   font-family: 'Helvetica', 'Arial', sans-serif;
   background-color: #f7f7f7;
@@ -35,22 +34,11 @@ h1 b {
   color: rgba(255, 255, 255, 1);
 }
 
-h2 {
-  margin: 5px 0;
-  font-weight: 300;
-  font-size: 18px;
-}
-
-h3 {
-  margin: 10px 0;
-}
-
 p a {
   color: #0d658c;
 }
 
 /* Layout */
-
 body {
   margin: 0;
 }
@@ -66,18 +54,6 @@ body {
   margin-left: auto;
   margin-right: auto;
 }
-
-/* @media (min-width: 1180px) {
-  .l--page {
-    width: 1100px;
-  }
-}
-
-@media (min-width: 1400px) {
-  .l--page {
-    width: 1220px;
-  }
-} */
 
 /* Buttons */
 
@@ -141,21 +117,7 @@ body {
   font-size: 16px;
 }
 
-.hide-button {
-  cursor: pointer;
-  padding: 6px 4px 8px 4px;
-  border-left: 1px solid #2c2c2c;
-  border-bottom: 1px solid #2c2c2c;
-  position: fixed;
-  right: 0px;
-  background: #1a1a1a;
-  color: #eee;
-  font: 11px 'Lucida Grande', sans-serif;
-  display: table;
-}
-
 /* Header */
-
 .github-link {
   width: 60px;
   height: 60px;
@@ -284,12 +246,7 @@ select:focus {
   top: -20px;
 }
 
-#hovercard input {
-  width: 60px;
-}
-
 /* Main Part*/
-
 #main-part {
   display: -webkit-box;
   display: -moz-box;
@@ -364,12 +321,6 @@ canvas {
   display: block;
 }
 
-.link {
-  fill: none;
-  stroke: #aaa;
-  stroke-width: 1;
-}
-
 g.column rect {
   stroke: none;
 }
@@ -396,17 +347,7 @@ g.column rect {
   stroke: #999;
 }
 
-/* Data column */
-
-.vcenter {
-  display: -webkit-box;
-  display: -moz-box;
-  display: -ms-flexbox;
-  display: -webkit-flex;
-  display: flex;
-  align-items: center;
-}
-
+/* Side column */
 .side-column {
   width: 10%;
 }
@@ -436,14 +377,6 @@ g.column rect {
   border: 2px solid rgba(0, 0, 0, 0.1);
   border-radius: 3px;
 }
-
-/*.side-column .dataset:first-of-type {
-  margin-top: 8px;
-}
-
-.side-column .dataset:last-of-type {
-  margin-bottom: 20px;
-}*/
 
 .side-column .data-thumbnail:hover {
   border: 2px solid #999;
@@ -509,86 +442,6 @@ g.column rect {
   color: rgba(0, 0, 0, 0.8);
 }
 
-/* Features column */
-
-.features.column {
-  width: 10%;
-  position: relative;
-}
-
-.features.column .plus-minus-neurons {
-  position: absolute;
-  text-align: center;
-  line-height: 28px;
-  top: -58px;
-  width: 65px;
-  height: 44px;
-  font-size: 12px;
-  z-index: 100;
-}
-
-.plus-minus-neurons .mdl-button:first-of-type {
-  margin-right: 5px;
-}
-
-.features.column .callout {
-  position: absolute;
-  width: 95px;
-  font-style: italic;
-}
-
-.features.column .callout svg {
-  position: absolute;
-  left: -15px;
-  width: 30px;
-  height: 30px;
-}
-
-.features.column .callout svg path {
-  fill: none;
-  stroke: black;
-  stroke-opacity: 0.4;
-}
-
-.features.column .callout svg defs path {
-  fill: black;
-  stroke: none;
-  fill-opacity: 0.4;
-}
-
-#main-part .features.column .callout .label {
-  position: absolute;
-  top: 24px;
-  left: 3px;
-  font-size: 11px;
-}
-
-/* Network (inside features column) */
-
-.axis line {
-  fill: none;
-  stroke: #777;
-  shape-rendering: crispEdges;
-}
-
-.axis text {
-  fill: #777;
-  font-size: 10px;
-}
-
-.axis path {
-  display: none;
-}
-
-@-webkit-keyframes flowing {
-  from {
-    stroke-dashoffset: 0;
-  }
-  to {
-    stroke-dashoffset: -10;
-  }
-}
-
 /* Main column */
 .main-column {
   width: 60%;
@@ -633,8 +486,38 @@ g.test circle {
   fill-opacity: 0.9;
 }
 
-/* Article */
+g.point circle {
+  stroke: black;
+  stroke-width: 1;
+  stroke-opacity: 0.6;
+  fill-opacity: 0.9;
+}
 
+.axis line {
+  fill: none;
+  stroke: #777;
+  shape-rendering: crispEdges;
+}
+
+.axis text {
+  fill: #777;
+  font-size: 10px;
+}
+
+.axis path {
+  display: none;
+}
+
+@-webkit-keyframes flowing {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+/* Article */
 article {
   background: white;
   padding: 80px 0;
@@ -668,7 +551,6 @@ article p {
 }
 
 /* Footer */
-
 footer {
   border-top: solid 1px #eee;
   color: #ccc;
@@ -703,30 +585,8 @@ footer .links a:hover {
   text-decoration: underline;
 }
 
-.hide-controls {
-  display: -webkit-box;
-  display: -moz-box;
-  display: -ms-flexbox;
-  display: -webkit-flex;
-  display: flex;
-  flex-wrap: wrap;
-  -webkit-justify-content: space-between;
-  justify-content: space-between;
-}
-
-.hide-controls label.mdl-checkbox {
-  width: 145px;
-  height: 30px;
-}
-
-.hide-controls .mdl-checkbox__label {
-  font-size: 13px;
-}
-
 /* Material Overrides */
-
 /* Buttons */
-
 .mdl-button--fab.mdl-button--colored,
 .mdl-button--fab.mdl-button--colored:hover,
 .mdl-button--fab.mdl-button--colored:active,
@@ -736,7 +596,6 @@ footer .links a:hover {
 }
 
 /* Checkbox */
-
 .mdl-checkbox__box-outline {
   border-color: rgba(0, 0, 0, 0.5);
 }

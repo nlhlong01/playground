@@ -88,7 +88,8 @@ export class HeatMap {
       .map((a) => tmpScale(a));
 
     this.color = d3.scale
-      .quantize().domain([-1, 1])
+      .quantize()
+      .domain([-1, 1])
       .range(colors);
 
     container = container.append('div').style({
@@ -175,16 +176,9 @@ export class HeatMap {
   }
 
   updateBackground(data: number[][], discretize: boolean): void {
-    if (data.length === 0) {
-      this.clearBackground();
-      return;
-    }
-
-    // TODO: Get rid of this.
-    const labelScale = d3.scale
-      .linear()
-      .domain([0, 1])
-      .range([-1, 1]);
+    if (!data.length || !data[0].length) throw new Error(
+      'Boundary is invalid'
+    );
 
     const dx = data[0].length;
     const dy = data.length;
@@ -201,11 +195,12 @@ export class HeatMap {
 
     for (let y = 0, p = -1; y < dy; ++y) {
       for (let x = 0; x < dx; ++x) {
-        // TODO: Change this.
-        let value = data ? labelScale(data[x][y]) : 0;
-        if (discretize) {
-          value = (value >= 0 ? 1 : -1);
+        let value = data[x][y];
+        if (value === undefined) {
+          this.clearBackground();
+          return;
         }
+        if (discretize) value = (value >= 0 ? 1 : -1);
         const c = d3.rgb(this.color(value));
         image.data[++p] = c.r;
         image.data[++p] = c.g;
@@ -252,6 +247,11 @@ export class HeatMap {
     const hoverCard = d3.select('#hovercard');
     selection
       .on('mouseenter', (d: Example2D) => {
+        if (d.voteCounts === undefined) return;
+        if (d.voteCounts.length !== 2) throw new Error(
+          'Vote counts are not valid'
+        );
+
         const container = d3.select('#main-heatmap canvas');
         const coordinates = d3.mouse(container.node());
 
@@ -262,47 +262,12 @@ export class HeatMap {
         });
 
         d3.select('#hovercard.ui-nvotes #first-class.value')
-          .text(d.voteCounts ? d.voteCounts[0] : '0');
+          .text(d.voteCounts[0]);
         d3.select('#hovercard.ui-nvotes #second-class.value')
-          .text(d.voteCounts ? d.voteCounts[1] : '0');
+          .text(d.voteCounts[1]);
       })
       .on('mouseleave', () => {
         hoverCard.style('display', 'none');
       });
   }
 } // Close class HeatMap.
-
-export function reduceMatrix(matrix: number[][], factor: number): number[][] {
-  if (matrix.length !== matrix[0].length) {
-    throw new Error('The provided matrix must be a square matrix');
-  }
-
-  if (matrix.length % factor !== 0) {
-    throw new Error(
-      'The width/height of the matrix must be divisible by ' +
-        'the reduction factor'
-    );
-  }
-
-  const result: number[][] = new Array(matrix.length / factor);
-
-  for (let i = 0; i < matrix.length; i += factor) {
-    result[i / factor] = new Array(matrix.length / factor);
-
-    for (let j = 0; j < matrix.length; j += factor) {
-      let avg = 0;
-
-      // Sum all the values in the neighborhood.
-      for (let k = 0; k < factor; k++) {
-        for (let l = 0; l < factor; l++) {
-          avg += matrix[i + k][j + l];
-        }
-      }
-
-      avg /= factor * factor;
-      result[i / factor][j / factor] = avg;
-    }
-  }
-
-  return result;
-}
