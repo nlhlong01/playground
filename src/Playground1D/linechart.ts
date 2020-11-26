@@ -39,13 +39,11 @@ export class LineChart {
 
   constructor(
     width: number,
-    // numSamples: number,
     xDomain: [number, number],
     yDomain: [number, number],
     container,
     userSettings?: PlotSettings
   ) {
-    // this.numSamples = numSamples;
     const height = width;
     const padding = userSettings.showAxes ? 20 : 0;
 
@@ -162,11 +160,12 @@ export class LineChart {
     const xDomain = this.xScale.domain();
     const yDomain = this.yScale.domain();
     points = points.filter(
-      (p) =>
+      (p) => (
         p.x >= xDomain[0] &&
         p.x <= xDomain[1] &&
         p.y >= yDomain[0] &&
         p.y <= yDomain[1]
+      )
     );
 
     // Attach data to initially empty selection.

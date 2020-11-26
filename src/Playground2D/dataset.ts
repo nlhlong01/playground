@@ -22,7 +22,7 @@ import { Schema, Validator } from 'jsonschema';
 export type Example2D = {
   x: number;
   y: number;
-  label?: number;
+  label: number;
   voteCounts?: number[];
 };
 
@@ -86,10 +86,7 @@ export function shuffle(array: any[]): void {
   }
 }
 
-export type DataGenerator = (
-  numSamples: number,
-  noise: number
-) => Example2D[] | Point[];
+export type DataGenerator = (numSamples: number, noise: number) => Example2D[];
 
 export function classifyTwoGaussData(numSamples: number, noise: number):
 Example2D[] {

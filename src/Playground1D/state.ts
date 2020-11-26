@@ -58,25 +58,18 @@ export class State {
     { name: 'dataset', type: Type.OBJECT, keyMap: datasets },
     { name: 'noise', type: Type.NUMBER },
     { name: 'seed', type: Type.STRING },
-    { name: 'x', type: Type.BOOLEAN },
-    { name: 'y', type: Type.BOOLEAN },
     { name: 'percSamples', type: Type.NUMBER },
     { name: 'nTrees', type: Type.NUMBER },
-    { name: 'maxDepth', type: Type.NUMBER },
-    { name: 'maxFeatures', type: Type.NUMBER }
+    { name: 'maxDepth', type: Type.NUMBER }
   ];
 
   [key: string]: any;
-  showTestData = false;
   noise = 20;
-  x = true;
-  y = true;
   dataset: dataset.DataGenerator = dataset.regressLinear;
   seed: string;
   percSamples = 80;
   nTrees = 100;
   maxDepth = 5;
-  maxFeatures = 1;
 
   /**
    * Deserializes the state from the url hash.

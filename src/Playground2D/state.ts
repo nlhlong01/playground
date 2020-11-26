@@ -84,7 +84,7 @@ export class State {
 
   [key: string]: any;
   showTestData = false;
-  noise = 20;
+  noise = 0;
   discretize = false;
   percTrainData = 70;
   problem = Problem.CLASSIFICATION;

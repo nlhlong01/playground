@@ -176,11 +176,9 @@ export class HeatMap {
   }
 
   updateBackground(data: number[][], discretize: boolean): void {
-    if (
-      data.length === undefined ||
-      data.length === 0 ||
-      data[0].length === 0
-    ) throw new Error('Boundary is invalid');
+    if (!data.length || !data[0].length) throw new Error(
+      'Boundary is invalid'
+    );
 
     const dx = data[0].length;
     const dy = data.length;
@@ -237,8 +235,8 @@ export class HeatMap {
     // Update points to be in the correct position.
     selection
       .attr({
-        cx: (d) => this.xScale(d.x),
-        cy: (d) => this.yScale(d.y)
+        cx: (d: Example2D) => this.xScale(d.x),
+        cy: (d: Example2D) => this.yScale(d.y)
       })
       .style('fill', (d) => this.color(d.label));
 
@@ -250,7 +248,7 @@ export class HeatMap {
     selection
       .on('mouseenter', (d: Example2D) => {
         if (d.voteCounts === undefined) return;
-        if (d.voteCounts.length < 2) throw new Error(
+        if (d.voteCounts.length !== 2) throw new Error(
           'Vote counts are not valid'
         );
 

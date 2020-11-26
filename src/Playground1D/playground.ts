@@ -40,7 +40,6 @@ const xDomain: [number, number] = [-6, 6];
 // Plot the main linechart.
 const mainLineChart = new LineChart(
   SIDE_LENGTH,
-  // DENSITY,
   xDomain,
   xDomain,
   d3.select('#main-linechart'),
@@ -126,6 +125,7 @@ function makeGUI() {
     generateData();
     reset();
   });
+
   const datasetKey = getKeyFromValue(datasets, state.dataset);
   // Select the dataset according to the current state.
   d3.select(`canvas[data-dataset=${datasetKey}]`)
@@ -206,14 +206,6 @@ function makeGUI() {
   percSamples.property('value', state.percSamples);
   d3.select("label[for='percSamples'] .value")
     .text(state.percSamples);
-
-  // Configure the maximum bagged feature.
-  const maxFeatures = d3.select('#maxFeatures').on('change', function () {
-    state.maxFeatures = +this.value;
-    state.serialize();
-    reset();
-  });
-  maxFeatures.property('value', state.maxFeatures);
 
   /* Data configurations */
   // Configure the level of noise.
