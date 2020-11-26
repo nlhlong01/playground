@@ -175,7 +175,7 @@ export class HeatMap {
   }
 
   updateBackground(data: number[][], discretize: boolean): void {
-    if (!data.length) {
+    if (data.length === 0) {
       this.clearBackground();
       return;
     }
