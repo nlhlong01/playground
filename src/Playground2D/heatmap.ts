@@ -14,7 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 import * as d3 from 'd3';
-import { Example2D, Point } from './dataset';
+import { Example2D } from './dataset';
 
 export interface HeatMapSettings {
   [key: string]: any;
@@ -88,7 +88,8 @@ export class HeatMap {
       .map((a) => tmpScale(a));
 
     this.color = d3.scale
-      .quantize().domain([-1, 1])
+      .quantize()
+      .domain([-1, 1])
       .range(colors);
 
     container = container.append('div').style({
@@ -154,14 +155,14 @@ export class HeatMap {
     }
   }
 
-  updateTestPoints(points: Example2D[] | Point[]): void {
+  updateTestPoints(points: Example2D[]): void {
     if (this.settings.noSvg) {
       throw Error("Can't add points since noSvg=true");
     }
     this.updateCircles(this.svg.select('g.test'), points);
   }
 
-  updatePoints(points: Example2D[] | Point[]): void {
+  updatePoints(points: Example2D[]): void {
     if (this.settings.noSvg) {
       throw Error("Can't add points since noSvg=true");
     }
@@ -175,10 +176,11 @@ export class HeatMap {
   }
 
   updateBackground(data: number[][], discretize: boolean): void {
-    if (data.length === 0) {
-      this.clearBackground();
-      return;
-    }
+    if (
+      data.length === undefined ||
+      data.length === 0 ||
+      data[0].length === 0
+    ) throw new Error('Boundary is invalid');
 
     const dx = data[0].length;
     const dy = data.length;
@@ -196,9 +198,11 @@ export class HeatMap {
     for (let y = 0, p = -1; y < dy; ++y) {
       for (let x = 0; x < dx; ++x) {
         let value = data[x][y];
-        if (discretize) {
-          value = (value >= 0 ? 1 : -1);
+        if (value === undefined) {
+          this.clearBackground();
+          return;
         }
+        if (discretize) value = (value >= 0 ? 1 : -1);
         const c = d3.rgb(this.color(value));
         image.data[++p] = c.r;
         image.data[++p] = c.g;
@@ -209,35 +213,7 @@ export class HeatMap {
     context.putImageData(image, 0, 0);
   }
 
-  plot(x: number[], y: number[]) {
-    if (x.length !== y.length) throw new Error(
-      'x and y do not have the same length'
-    );
-
-    const data = [];
-    for (let i = 0; i < x.length; i++) {
-      data[i] = { x: x[i], y: y[i] };
-    }
-
-    const line = d3.svg
-      .line<{ x: number; y: number }>()
-      .x((d) => this.xScale(d.x))
-      .y((d) => this.yScale(d.y));
-
-    this.svg
-      .append('path')
-      .datum(data)
-      .attr('class', 'plot')
-      .attr('fill', 'none')
-      .attr('stroke', 'steelblue')
-      .attr('stroke-width', 1.5)
-      .attr('stroke-linejoin', 'round')
-      .attr('stroke-linecap', 'round')
-      .attr('d', line);
-  }
-
-  // TODO: Doublecheck the type of points.
-  private updateCircles(container, points: Example2D[] | Point[]) {
+  private updateCircles(container, points: Example2D[]) {
     // Keep only points that are inside the bounds.
     const xDomain = this.xScale.domain();
     const yDomain = this.yScale.domain();
@@ -297,38 +273,3 @@ export class HeatMap {
       });
   }
 } // Close class HeatMap.
-
-export function reduceMatrix(matrix: number[][], factor: number): number[][] {
-  if (matrix.length !== matrix[0].length) {
-    throw new Error('The provided matrix must be a square matrix');
-  }
-
-  if (matrix.length % factor !== 0) {
-    throw new Error(
-      'The width/height of the matrix must be divisible by ' +
-        'the reduction factor'
-    );
-  }
-
-  const result: number[][] = new Array(matrix.length / factor);
-
-  for (let i = 0; i < matrix.length; i += factor) {
-    result[i / factor] = new Array(matrix.length / factor);
-
-    for (let j = 0; j < matrix.length; j += factor) {
-      let avg = 0;
-
-      // Sum all the values in the neighborhood.
-      for (let k = 0; k < factor; k++) {
-        for (let l = 0; l < factor; l++) {
-          avg += matrix[i + k][j + l];
-        }
-      }
-
-      avg /= factor * factor;
-      result[i / factor][j / factor] = avg;
-    }
-  }
-
-  return result;
-}

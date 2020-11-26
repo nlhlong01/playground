@@ -18,13 +18,13 @@ import * as dataset from './dataset';
 import 'seedrandom';
 
 /** A map between dataset names and functions that generate regression data. */
-export const regDatasets1D: { [key: string]: dataset.DataGenerator } = {
-  'reg1D-linear': dataset.regressLinear,
-  'reg1D-quadr': dataset.regressQuadr,
-  'reg1D-quadrShift': dataset.regressQuadrShift,
-  'reg1D-sine': dataset.regressSine,
-  'reg1D-sigmoid': dataset.regressSigmoid,
-  'reg1D-step': dataset.regressStep
+export const datasets: { [key: string]: dataset.DataGenerator } = {
+  'linear': dataset.regressLinear,
+  'quadr': dataset.regressQuadr,
+  'quadrShift': dataset.regressQuadrShift,
+  'sine': dataset.regressSine,
+  'sigmoid': dataset.regressSigmoid,
+  'step': dataset.regressStep
 };
 
 export function getKeyFromValue(obj: any, value: any): string {
@@ -55,15 +55,11 @@ export interface Property {
 // Add the GUI state.
 export class State {
   private static PROPS: Property[] = [
-    { name: 'regDataset1D', type: Type.OBJECT, keyMap: regDatasets1D },
+    { name: 'dataset', type: Type.OBJECT, keyMap: datasets },
     { name: 'noise', type: Type.NUMBER },
     { name: 'seed', type: Type.STRING },
-    { name: 'showTestData', type: Type.BOOLEAN },
-    { name: 'percTrainData', type: Type.NUMBER },
     { name: 'x', type: Type.BOOLEAN },
     { name: 'y', type: Type.BOOLEAN },
-    { name: 'tutorial', type: Type.STRING },
-    { name: 'initZero', type: Type.BOOLEAN },
     { name: 'percSamples', type: Type.NUMBER },
     { name: 'nTrees', type: Type.NUMBER },
     { name: 'maxDepth', type: Type.NUMBER },
@@ -73,12 +69,9 @@ export class State {
   [key: string]: any;
   showTestData = false;
   noise = 20;
-  tutorial: string = null;
-  percTrainData = 70;
-  initZero = false;
   x = true;
   y = true;
-  regDataset1D: dataset.DataGenerator = dataset.regressLinear;
+  dataset: dataset.DataGenerator = dataset.regressLinear;
   seed: string;
   percSamples = 80;
   nTrees = 100;

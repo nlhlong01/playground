@@ -1,11 +1,22 @@
+/* Copyright 2016 Google Inc. All Rights Reserved.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as d3 from 'd3';
 import { HeatMap } from './heatmap';
 import {
   State,
   datasets,
-  regDatasets1D,
-  regDatasets2D,
+  regDatasets,
   problems,
   getKeyFromValue,
   Problem
@@ -16,14 +27,13 @@ import {
   RandomForestClassifier as RFClassifier,
   RandomForestRegression as RFRegressor
 } from 'ml-random-forest';
-import './styles.css';
+import '../styles.css';
 import 'material-design-lite';
 import 'material-design-lite/dist/material.indigo-blue.min.css';
 import Worker from 'worker-loader!./train.worker';
 
 const NUM_SAMPLES_CLASSIFY = 400;
-const NUM_SAMPLES_REGRESS_1D = 200;
-const NUM_SAMPLES_REGRESS_2D = 800;
+const NUM_SAMPLES_REGRESS = 800;
 // Size of the heatmaps.
 const SIDE_LENGTH = 300;
 // # of points per direction.
@@ -31,9 +41,6 @@ const DENSITY = 50;
 const NUM_VISIBLE_TREES = 16;
 
 const state = State.deserializeState();
-
-let mainBoundary: number[][];
-let treeBoundaries: number[][][];
 
 const xDomain: [number, number] = [-6, 6];
 // Label values must be scaled before and after training since RF impl does not
@@ -61,9 +68,9 @@ const mainHeatMap = new HeatMap(
 const treeHeatMaps: HeatMap[] = new Array(NUM_VISIBLE_TREES);
 for (let i = 0; i < NUM_VISIBLE_TREES; i++) {
   const container = d3
-    .select('.estimator-heatmaps-container')
+    .select('.tree-heatmaps-container')
     .append('div')
-    .attr('id', `estimator-heatmap-${i}`)
+    .attr('id', `tree-heatmap-${i}`)
     .attr('class' , 'mdl-cell mdl-cell--3-col');
   treeHeatMaps[i] = new HeatMap(
     SIDE_LENGTH / 6,
@@ -86,65 +93,33 @@ let options;
 let Method;
 let rf: RFClassifier | RFRegressor;
 let isClassifier: boolean;
-let isRegressor1D: boolean;
-let isRegressor2D: boolean;
-let data = [];
-let uploadedData: Example2D[] = [];
-let trainData = [];
-let testData = [];
+let data: Example2D[];
+let uploadedData: Example2D[];
+let trainData: Example2D[];
+let testData: Example2D[];
 let lossTrain: number;
 let lossTest: number;
 let accuracy: number;
 let precision: number;
 let recall: number;
+let mainBoundary: number[][];
+let treeBoundaries: number[][][];
 
 /**
  * Prepares the UI on startup.
  */
 function makeGUI() {
-  d3.select('#train-button').on('click', () => {
+  d3.select('#start-button').on('click', () => {
     isLoading(true);
-
-    // const yScale = d3.scale
-    //   .linear()
-    //   .domain(xDomain)
-    //   .range([0, 1]);
-    // rf = new Method(options);
-    // rf.train(
-    //   trainData.map((d) => [d.x]),
-    //   trainData.map((d) => yScale(d.y))
-    // );
-
-    // const DENSITY_1D = 50;
-    // const xScale = d3.scale
-    //   .linear()
-    //   .domain([0, DENSITY_1D - 1])
-    //   .range(xDomain);
-    // let x = new Array(DENSITY_1D);
-    // for (let i = 0; i < DENSITY_1D; i++) {
-    //   x[i] = [xScale(i)];
-    // }
-    // let y = rf.predict(x);
-    // const yRescale = d3.scale
-    //   .linear()
-    //   .domain([0, 1])
-    //   .range(xDomain);
-    // y = y.map((val) => yRescale(val));
-
-    // x = x.map((val) => val[0]);
-    // mainHeatMap.plot(x, y);
 
     trainWorker.terminate();
     trainWorker = new Worker();
 
     trainWorker.postMessage({
       options: options,
-      trainingSet: isRegressor1D
-        ? trainData.map((d) => [d.x])
-        : trainData.map((d) => [d.x, d.y]),
-      labels: isRegressor1D
-        ? trainData.map((d) => inputScale(d.y))
-        : trainData.map((d) => inputScale(d.label)),
+      trainingSet: trainData.map((d) => [d.x, d.y]),
+      // Scale the input label to avoid negative class labels.
+      labels: trainData.map((d) => inputScale(d.label)),
       isClassifier: isClassifier
     });
 
@@ -160,13 +135,12 @@ function makeGUI() {
 
       for (let i = 0; i < treePredictions.length; i++) {
         for (let j = 0; j < treePredictions[0].length; j++) {
+          // Rescale predictions back to {-1, 1}
           treePredictions[i][j] = outputScale(treePredictions[i][j]);
           // In case of classifier, add the vote counts for each point.
           if (isClassifier) {
             const pred = treePredictions[i][j];
-            if (data[i]['voteCounts'] === undefined) {
-              data[i]['voteCounts'] = [0, 0];
-            }
+            data[i]['voteCounts'] = data[i]['voteCounts'] || [0, 0];
             // Increment the vote count of each class.
             if (pred === -1) data[i]['voteCounts'][0]++;
             else if (pred === 1) data[i]['voteCounts'][1]++;
@@ -187,7 +161,6 @@ function makeGUI() {
         ({ accuracy, precision, recall } = score(testPredictions, testLabels));
       }
 
-      // updatePoints();
       updateUI();
       isLoading(false);
     };
@@ -215,38 +188,21 @@ function makeGUI() {
   d3.select(`canvas[data-dataset=${datasetKey}]`)
     .classed('selected', true);
 
-  const regData1DThumbnails = d3.selectAll('canvas[data-regDataset1D]');
-  regData1DThumbnails.on('click', function () {
-    const newDataset = regDatasets1D[this.dataset.regdataset1d];
-    if (newDataset === state.regDataset1D) {
+  const regDataThumbnails = d3.selectAll('canvas[data-regDataset]');
+  regDataThumbnails.on('click', function () {
+    const newDataset = regDatasets[this.dataset.regdataset];
+    if (newDataset === state.regDataset) {
       return; // No-op.
     }
-    state.regDataset1D = newDataset;
-    regData1DThumbnails.classed('selected', false);
+    state.regDataset = newDataset;
+    regDataThumbnails.classed('selected', false);
     d3.select(this).classed('selected', true);
     generateData();
     reset();
   });
-  const regDataset1DKey = getKeyFromValue(regDatasets1D, state.regDataset1D);
+  const regDatasetKey = getKeyFromValue(regDatasets, state.regDataset);
   // Select the dataset according to the current state.
-  d3.select(`canvas[data-regDataset1D=${regDataset1DKey}]`)
-    .classed('selected', true);
-
-  const regData2DThumbnails = d3.selectAll('canvas[data-regDataset2D]');
-  regData2DThumbnails.on('click', function () {
-    const newDataset = regDatasets2D[this.dataset.regdataset2d];
-    if (newDataset === state.regDataset2D) {
-      return; // No-op.
-    }
-    state.regDataset2D = newDataset;
-    regData2DThumbnails.classed('selected', false);
-    d3.select(this).classed('selected', true);
-    generateData();
-    reset();
-  });
-  const regDataset2DKey = getKeyFromValue(regDatasets2D, state.regDataset2D);
-  // Select the dataset according to the current state.
-  d3.select(`canvas[data-regDataset2D=${regDataset2DKey}]`)
+  d3.select(`canvas[data-regDataset=${regDatasetKey}]`)
     .classed('selected', true);
 
   d3.select('#file-input')
@@ -282,13 +238,10 @@ function makeGUI() {
   /* Main Column */
   // Heat maps of the esimators.
   for (let i = 0; i < NUM_VISIBLE_TREES; i++) {
-    d3.select(`#estimator-heatmap-${i} canvas`)
+    d3.select(`#tree-heatmap-${i} canvas`)
       .style('border', '2px solid black')
       .on('mouseenter', () => {
-        mainHeatMap.updateBackground(
-          treeBoundaries[i],
-          state.discretize
-        );
+        mainHeatMap.updateBackground(treeBoundaries[i], state.discretize);
       })
       .on('mouseleave', () => {
         mainHeatMap.updateBackground(mainBoundary, state.discretize);
@@ -361,7 +314,6 @@ function makeGUI() {
       map.updateBackground(treeBoundaries[idx], state.discretize);
     });
   });
-
   // Check/uncheck the checbox according to the current state.
   discretize.property('checked', state.discretize);
 
@@ -415,7 +367,7 @@ function makeGUI() {
 }
 
 function updateDecisionBoundary(): void {
-  let treeIndex: number;
+  let treeIdx: number;
   let i: number;
   let j: number;
 
@@ -428,13 +380,15 @@ function updateDecisionBoundary(): void {
     .domain([DENSITY - 1, 0])
     .range(xDomain);
 
-  for (treeIndex = 0; treeIndex < NUM_VISIBLE_TREES; treeIndex++) {
-    treeBoundaries[treeIndex] = new Array(DENSITY);
+  treeBoundaries = new Array(NUM_VISIBLE_TREES);
+  for (treeIdx = 0; treeIdx < NUM_VISIBLE_TREES; treeIdx++) {
+    treeBoundaries[treeIdx] = new Array(DENSITY);
     for (i = 0; i < DENSITY; i++) {
-      treeBoundaries[treeIndex][i] = new Array(DENSITY);
+      treeBoundaries[treeIdx][i] = new Array(DENSITY);
     }
   }
 
+  mainBoundary = new Array(DENSITY);
   for (i = 0; i < DENSITY; i++) {
     mainBoundary[i] = new Array(DENSITY);
     for (j = 0; j < DENSITY; j++) {
@@ -447,17 +401,19 @@ function updateDecisionBoundary(): void {
         .to2DArray();
 
       // TODO: No need to use a nested for-loop.
-      for (let i = 0; i < treePredictions.length; i++) {
-        for (let j = 0; j < treePredictions[0].length; j++) {
-          treePredictions[i][j] = outputScale(treePredictions[i][j]);
+      for (treeIdx = 0; treeIdx < NUM_VISIBLE_TREES; treeIdx++) {
+        for (let j = 0; j < DENSITY; j++) {
+          treePredictions[treeIdx][j] = outputScale(
+            treePredictions[treeIdx][j]
+          );
         }
-        predictions[i] = rf.selection(treePredictions[i]);
+        predictions[treeIdx] = rf.selection(treePredictions[treeIdx]);
       }
 
       // Update prediction of that point in all boundaries.
       mainBoundary[i][j] = predictions[0];
-      for (treeIndex = 0; treeIndex < NUM_VISIBLE_TREES; treeIndex++) {
-        treeBoundaries[treeIndex][i][j] = treePredictions[0][treeIndex];
+      for (treeIdx = 0; treeIdx < NUM_VISIBLE_TREES; treeIdx++) {
+        treeBoundaries[treeIdx][i][j] = treePredictions[0][treeIdx];
       }
     }
   }
@@ -489,7 +445,7 @@ function score(predClass: number[], trueClass: number[]) {
     throw Error('Length of predictions must equal length of labels');
   }
 
-  // 4 items of a confusion matrix.
+  // 4 elements of a confusion matrix.
   let tp = 0;
   let tn = 0;
   let fp = 0;
@@ -518,10 +474,6 @@ function score(predClass: number[], trueClass: number[]) {
  * @param reset True when called in reset()
  */
 function updateUI(reset = false) {
-  // Remove all 2D plots.
-  d3.selectAll('path.plot').remove();
-  d3.select('.color-scale').attr('class', isClassifier ? 'visible' : 'none');
-
   if (!reset) updateDecisionBoundary();
   mainHeatMap.updateBackground(mainBoundary, state.discretize);
   for (let i = 0; i < treeHeatMaps.length; i++) {
@@ -539,6 +491,7 @@ function updateUI(reset = false) {
 }
 
 /**
+ * Reset the app to initial state.
  * @param reset True when called on startup.
  */
 function reset(onStartup = false) {
@@ -551,7 +504,6 @@ function reset(onStartup = false) {
   options = {
     nEstimators: state.nTrees,
     maxSamples: state.percSamples / 100,
-    // maxFeatures: state.maxFeatures / 2,
     maxFeatures: 1.0,
     treeOptions: { maxDepth: state.maxDepth },
     seed: undefined,
@@ -560,10 +512,10 @@ function reset(onStartup = false) {
   };
 
   isClassifier = state.problem === Problem.CLASSIFICATION;
-  isRegressor1D = state.problem === Problem.REGRESSION_1D;
-  isRegressor2D = state.problem === Problem.REGRESSION_2D;
   Method = isClassifier ? RFClassifier : RFRegressor;
   rf = null;
+  d3.select("#start-button .value")
+    .text(isClassifier ? 'classify' : 'regress');
 
   lossTest = 0;
   lossTrain = 0;
@@ -571,8 +523,15 @@ function reset(onStartup = false) {
   precision = 0;
   recall = 0;
 
-  mainBoundary = [];
-  treeBoundaries = new Array(NUM_VISIBLE_TREES).fill([]);
+  mainBoundary = new Array(DENSITY);
+  treeBoundaries = new Array(NUM_VISIBLE_TREES);
+  for (let treeIdx = 0; treeIdx < NUM_VISIBLE_TREES; treeIdx++) {
+    treeBoundaries[treeIdx] = new Array(DENSITY);
+    for (let x = 0; x < DENSITY; x++) {
+      mainBoundary[x] = new Array(DENSITY);
+      treeBoundaries[treeIdx][x] = new Array(DENSITY);
+    }
+  }
 
   data.forEach((d) => {
     delete d.voteCounts;
@@ -604,7 +563,7 @@ function drawDatasetThumbnails() {
   };
   d3.selectAll('.dataset').style('display', 'none');
 
-  if (state.problem === Problem.CLASSIFICATION) {
+  if (isClassifier) {
     for (const dataset in datasets) {
       const canvas: any = document.querySelector(
         `canvas[data-dataset=${dataset}]`
@@ -612,22 +571,12 @@ function drawDatasetThumbnails() {
       const dataGenerator = datasets[dataset];
       renderThumbnail(canvas, dataGenerator);
     }
-  }
-  if (state.problem === Problem.REGRESSION_1D) {
-    for (const dataset in regDatasets1D) {
+  } else {
+    for (const dataset in regDatasets) {
       const canvas: any = document.querySelector(
-        `canvas[data-regDataset1D=${dataset}]`
+        `canvas[data-regDataset=${dataset}]`
       );
-      const dataGenerator = regDatasets1D[dataset];
-      renderThumbnail(canvas, dataGenerator, 0.2);
-    }
-  }
-  if (state.problem === Problem.REGRESSION_2D) {
-    for (const dataset in regDatasets2D) {
-      const canvas: any = document.querySelector(
-        `canvas[data-regDataset2D=${dataset}]`
-      );
-      const dataGenerator = regDatasets2D[dataset];
+      const dataGenerator = regDatasets[dataset];
       renderThumbnail(canvas, dataGenerator);
     }
   }
@@ -641,19 +590,9 @@ function generateData(firstTime = false) {
   }
 
   Math.seedrandom(state.seed);
-  let numSamples: number;
-  let generator: DataGenerator;
 
-  if (state.problem === Problem.CLASSIFICATION) {
-    numSamples = NUM_SAMPLES_CLASSIFY;
-    generator = state.dataset;
-  } else if (state.problem === Problem.REGRESSION_1D) {
-    numSamples = NUM_SAMPLES_REGRESS_1D;
-    generator = state.regDataset1D;
-  } else {
-    numSamples = NUM_SAMPLES_REGRESS_2D;
-    generator = state.regDataset2D;
-  }
+  const numSamples = isClassifier ? NUM_SAMPLES_CLASSIFY : NUM_SAMPLES_REGRESS;
+  const generator = isClassifier ? state.dataset : state.regDataset;
 
   data = generator(numSamples, state.noise / 100);
   // Shuffle the data in-place.
@@ -691,7 +630,7 @@ function isLoading(loading: boolean) {
     .style('opacity', loading ? 0.2 : 1);
   d3.select('#main-heatmap svg')
     .style('opacity', loading ? 0.2 : 1);
-  d3.selectAll('.estimator-heatmaps-container canvas')
+  d3.selectAll('.tree-heatmaps-container canvas')
     .style('opacity', loading ? 0.2 : 1);
   d3.selectAll('*')
     .style('cursor', loading ? 'progress' : null);

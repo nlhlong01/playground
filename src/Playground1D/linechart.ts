@@ -35,7 +35,6 @@ export class LineChart {
   };
   private xScale: d3.scale.Linear<number, number>;
   private yScale: d3.scale.Linear<number, number>;
-  private numSamples: number;
   private svg;
 
   constructor(
@@ -91,8 +90,7 @@ export class LineChart {
       .attr('transform', `translate(${padding}, ${padding})`);
 
     if (!this.settings.noPoint) {
-      this.svg.append('g').attr('class', 'train');
-      this.svg.append('g').attr('class', 'test');
+      this.svg.append('g').attr('class', 'point');
     }
 
     if (this.settings.showAxes) {
@@ -120,32 +118,25 @@ export class LineChart {
     }
   }
 
-  updateTestPoints(points: Point[]): void {
-    if (this.settings.noPoint) {
-      throw Error("Can't add points since noPoint=true");
-    }
-    this.updateCircles(this.svg.select('g.test'), points);
-  }
-
   updatePoints(points: Point[]): void {
     if (this.settings.noPoint) {
       throw Error("Can't add points since noPoint=true");
     }
-    this.updateCircles(this.svg.select('g.train'), points);
+    this.updateCircles(this.svg.select('g.point'), points);
   }
 
-  updatePlot(data: Point[]) {
+  updatePlot(points: Point[]) {
     this.svg.select('path').remove();
 
-    // Keep only points that are inside the bounds.
+    // Keep only line segments that are inside the bounds.
     const xDomain = this.xScale.domain();
     const yDomain = this.yScale.domain();
-    data = data.filter(
-      (p) => (
-        p.x >= xDomain[0] &&
-        p.x <= xDomain[1] &&
-        p.y >= yDomain[0] &&
-        p.y <= yDomain[1]
+    points = points.filter(
+      (d) => (
+        d.x >= xDomain[0] &&
+        d.x <= xDomain[1] &&
+        d.y >= yDomain[0] &&
+        d.y <= yDomain[1]
       )
     );
 
@@ -156,10 +147,10 @@ export class LineChart {
 
     this.svg
       .append('path')
-      .datum(data)
+      .datum(points)
       .attr('class', 'plot')
       .attr('fill', 'none')
-      .attr('stroke', 'cornflowerblue')
+      .attr('stroke', 'coral')
       .attr('stroke-width', 3)
       .attr('stroke-linejoin', 'round')
       .attr('stroke-linecap', 'round')
@@ -193,7 +184,7 @@ export class LineChart {
         cx: (d) => this.xScale(d.x),
         cy: (d) => this.yScale(d.y)
       })
-      .style('fill', () => 'darkorange');
+      .style('fill', () => 'slateblue');
 
     // Remove points if the length has gone down.
     selection.exit().remove();

@@ -80,7 +80,7 @@ export type DataGenerator = (
   noise: number
 ) => Point[];
 
-function regressFunc1D(f) {
+function regressFunc(f) {
   return (numSamples: number, noise: number): Point[] => {
     const points: Point[] = [];
     for (let i = 0; i < numSamples; i++) {
@@ -100,14 +100,14 @@ function regressFunc1D(f) {
   };
 }
 
-export const regressLinear = regressFunc1D((x) => x);
-export const regressQuadr = regressFunc1D((x) => (6 / 40) * x ** 2 - 3);
-export const regressQuadrShift = regressFunc1D(
+export const regressLinear = regressFunc((x) => x);
+export const regressQuadr = regressFunc((x) => (6 / 40) * x ** 2 - 3);
+export const regressQuadrShift = regressFunc(
   (x) => (3 / 40) * x ** 2 - x / 2 - 1
 );
-export const regressSine = regressFunc1D((x) => 2 * Math.sin(x));
-export const regressSigmoid = regressFunc1D((x) => 5 - 5 * (1 + Math.tanh(x)));
-export const regressStep = regressFunc1D((x) => x > 2 ? 3 : -3);
+export const regressSine = regressFunc((x) => 2 * Math.sin(x));
+export const regressSigmoid = regressFunc((x) => 5 - 5 * (1 + Math.tanh(x)));
+export const regressStep = regressFunc((x) => x > 2 ? 3 : -3);
 
 /**
  * Returns a sample from a uniform [a, b] distribution.
@@ -137,11 +137,4 @@ function normalRandom(mean = 0, variance = 1): number {
 
   const result = Math.sqrt(-2 * Math.log(s) / s) * v1;
   return mean + Math.sqrt(variance) * result;
-}
-
-/** Returns the eucledian distance between two points in space. */
-function dist(a: Point, b: Point): number {
-  const dx = a.x - b.x;
-  const dy = a.y - b.y;
-  return Math.sqrt(dx ** 2 + dy ** 2);
 }

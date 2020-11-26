@@ -1,9 +1,20 @@
-/* eslint-disable @typescript-eslint/naming-convention */
+/* Copyright 2016 Google Inc. All Rights Reserved.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+    http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
+
 import * as d3 from 'd3';
 import { LineChart } from './linechart';
 import {
   State,
-  regDatasets1D,
+  datasets,
   getKeyFromValue,
 } from './state';
 import { DataGenerator, Point, shuffle, isValid } from './dataset';
@@ -46,7 +57,6 @@ for (let i = 0; i < NUM_VISIBLE_TREES; i++) {
     .attr('class' , 'mdl-cell mdl-cell--3-col');
   treeLineCharts[i] = new LineChart(
     SIDE_LENGTH / 6,
-    // DENSITY,
     xDomain,
     xDomain,
     container,
@@ -60,14 +70,12 @@ let curve: Point[];
 let treeCurves: Point[][];
 let data: Point[];
 let uploadedData: Point[];
-let lossTrain;
-let lossTest;
 
 /**
  * Prepares the UI on startup.
  */
 function makeGUI() {
-  d3.select('#train-button').on('click', () => {
+  d3.select('#start-button').on('click', () => {
     let pointIdx: number;
     let treeIdx = 0;
     const xScale = d3.scale
@@ -76,10 +84,7 @@ function makeGUI() {
       .range(xDomain);
 
     regressor = new RFRegressor(options);
-    regressor.train(
-      data.map((d) => [d.x]),
-      data.map((d) => d.y)
-    );
+    regressor.train(data.map((d) => [d.x]), data.map((d) => d.y));
 
     treeCurves = new Array(NUM_VISIBLE_TREES);
     for (treeIdx = 0; treeIdx < treeCurves.length; treeIdx++) {
@@ -92,7 +97,7 @@ function makeGUI() {
       const treePredictions: number[] = regressor
         .predictionValues([[x]])
         .to2DArray()[0];
-      for (treeIdx = 0; treeIdx < NUM_VISIBLE_TREES; treeIdx++) {
+      for (treeIdx = 0; treeIdx < treeCurves.length; treeIdx++) {
         const y = treePredictions[treeIdx];
         treeCurves[treeIdx][pointIdx] = { x, y };
       }
@@ -112,21 +117,18 @@ function makeGUI() {
     reset();
   });
 
-  const regData1DThumbnails = d3.selectAll('canvas[data-regDataset1D]');
-  regData1DThumbnails.on('click', function () {
-    const newDataset = regDatasets1D[this.dataset.regdataset1d];
-    if (newDataset === state.regDataset1D) {
-      return; // No-op.
-    }
-    state.regDataset1D = newDataset;
-    regData1DThumbnails.classed('selected', false);
+  const dataThumbnails = d3.selectAll('canvas[data-dataset]');
+  dataThumbnails.on('click', function () {
+    const newDataset = datasets[this.dataset.dataset];
+    state.dataset = newDataset;
+    dataThumbnails.classed('selected', false);
     d3.select(this).classed('selected', true);
     generateData();
     reset();
   });
-  const regDataset1DKey = getKeyFromValue(regDatasets1D, state.regDataset1D);
+  const datasetKey = getKeyFromValue(datasets, state.dataset);
   // Select the dataset according to the current state.
-  d3.select(`canvas[data-regDataset1D=${regDataset1DKey}]`)
+  d3.select(`canvas[data-dataset=${datasetKey}]`)
     .classed('selected', true);
 
   d3.select('#file-input')
@@ -214,17 +216,6 @@ function makeGUI() {
   maxFeatures.property('value', state.maxFeatures);
 
   /* Data configurations */
-  // Configure the ratio of training data to test data.
-  const percTrain = d3.select('#percTrainData').on('input', function () {
-    state.percTrainData = this.value;
-    d3.select("label[for='percTrainData'] .value")
-      .text(this.value);
-    reset();
-  });
-  percTrain.property('value', state.percTrainData);
-  d3.select("label[for='percTrainData'] .value")
-    .text(state.percTrainData);
-
   // Configure the level of noise.
   const noise = d3.select('#noise').on('input', function () {
     state.noise = this.value;
@@ -244,56 +235,6 @@ function makeGUI() {
 }
 
 /**
- * Computes the average mean square error of the predicted values.
- * @param predClass Correct target value.
- * @param trueClass Estimated target value.
- */
-function getLoss(predClass: number[], trueClass: number[]): number {
-  if (predClass.length !== trueClass.length) {
-    throw Error('Length of predictions must equal length of labels');
-  }
-  let loss = 0;
-  for (let i = 0; i < predClass.length; i++) {
-    loss += 0.5 * Math.pow(predClass[i] - trueClass[i], 2);
-  }
-  return loss / predClass.length;
-}
-
-/**
- * Compute classification metrics.
- * @param predClass Correct target value.
- * @param trueClass Estimated target value.
- */
-function score(predClass: number[], trueClass: number[]) {
-  if (predClass.length !== trueClass.length) {
-    throw Error('Length of predictions must equal length of labels');
-  }
-
-  // 4 items of a confusion matrix.
-  let tp = 0;
-  let tn = 0;
-  let fp = 0;
-  let fn = 0;
-
-  for (let i = 0; i < predClass.length; i++) {
-    const pred = predClass[i];
-    const label = trueClass[i];
-
-    if (pred === -1 && label === -1) tn++;
-    else if (pred === -1 && label === 1) fn++;
-    else if (pred === 1 && label === -1) fp++;
-    else if (pred === 1 && label === 1) tp++;
-    else throw Error('Predicted or true class value is invalid');
-  }
-
-  return {
-    accuracy: (tp + tn) / (tp + tn + fp + fn),
-    precision: tp / (tp + fp),
-    recall: tp / (tp + fn)
-  };
-}
-
-/**
  * Update all heat maps and metrics.
  * @param reset True when called in reset()
  */
@@ -306,8 +247,6 @@ function updateUI() {
   const updateMetric = (selector: string, value: number): void => {
     d3.select(selector).text(value.toFixed(3));
   };
-  updateMetric('#loss-train', lossTrain);
-  updateMetric('#loss-test', lossTest);
 }
 
 /**
@@ -324,9 +263,6 @@ function reset() {
     replacement: false
   };
   regressor = null;
-
-  lossTest = 0;
-  lossTrain = 0;
 
   curve = new Array(NUM_SAMPLES);
   treeCurves = new Array(NUM_VISIBLE_TREES);
@@ -352,18 +288,18 @@ function drawDatasetThumbnails() {
     const context = canvas.getContext('2d');
     const data = dataGenerator(200, noise);
     data.forEach((d: Point) => {
-      context.fillStyle = 'darkorange';
+      context.fillStyle = 'slateblue';
       context.fillRect((w * (d.x + 6)) / 12, (h * (-d.y + 6)) / 12, 4, 4);
     });
     d3.select(canvas.parentNode).style('display', null);
   };
   d3.selectAll('.dataset').style('display', 'none');
 
-  for (const dataset in regDatasets1D) {
+  for (const dataset in datasets) {
     const canvas: any = document.querySelector(
-      `canvas[data-regDataset1D=${dataset}]`
+      `canvas[data-dataset=${dataset}]`
     );
-    const dataGenerator = regDatasets1D[dataset];
+    const dataGenerator = datasets[dataset];
     renderThumbnail(canvas, dataGenerator, 0.5);
   }
 }
@@ -377,7 +313,7 @@ function generateData(firstTime = false) {
 
   Math.seedrandom(state.seed);
   const numSamples = NUM_SAMPLES;
-  const generator = state.regDataset1D;
+  const generator = state.dataset;
 
   data = generator(numSamples, state.noise / 100);
   // Shuffle the data in-place.

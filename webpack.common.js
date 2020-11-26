@@ -8,18 +8,18 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 module.exports = {
   context: path.resolve(__dirname, 'src'),
   entry: {
-    Playground2D: './playground.ts',
-    Playground1D: './Playground1D/playground.ts'
+    Playground1D: './Playground1D/playground.ts',
+    Playground2D: './Playground2D/playground.ts'
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './randomforest.html',
-      filename: 'randomforest.html',
+      template: './Playground2D/index.html',
+      filename: 'index.html',
       inject: false
     }),
     new HtmlWebpackPlugin({
       template: './Playground1D/index.html',
-      filename: 'index.html',
+      filename: 'rf1d.html',
       inject: false
     }),
     new MiniCssExtractPlugin({

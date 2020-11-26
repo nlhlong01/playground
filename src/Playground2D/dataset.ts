@@ -26,7 +26,7 @@ export type Example2D = {
   voteCounts?: number[];
 };
 
-export type Point = {
+type Point = {
   x: number;
   y: number;
 };
@@ -188,28 +188,6 @@ Example2D[] {
 
   return points;
 }
-
-function regressFunc1D(f, factor = 1) {
-  return (numSamples: number, noise: number): Example2D[] => {
-    const points: Point[] = [];
-    for (let i = 0; i < numSamples; i++) {
-      const x = randUniform(-6, 6);
-      const y = f(x) + randUniform(-4, 4) * factor * noise;
-      points.push({ x, y });
-    }
-    return points;
-  };
-}
-
-export const regressLinear = regressFunc1D((x) => x, 2);
-export const regressQuadr = regressFunc1D((x) => (6 / 40) * x ** 2 - 3, 1.5);
-export const regressQuadrShift = regressFunc1D(
-  (x) => (3 / 40) * x ** 2 - x / 2 - 1,
-  1.5
-);
-export const regressSine = regressFunc1D((x) => 2 * Math.sin(x), 1.5);
-export const regressSigmoid = regressFunc1D((x) => 5 - 5 * (1 + Math.tanh(x)));
-export const regressStep = regressFunc1D((x) => (x > 2 ? 3 : -3));
 
 export function regressPlane(numSamples: number, noise: number): Example2D[] {
   const radius = 6;
