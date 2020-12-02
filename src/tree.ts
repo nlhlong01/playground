@@ -1,10 +1,13 @@
 import * as d3 from 'd3';
+import { hierarchy } from 'd3-hierarchy';
 import { Example2D } from './dataset';
 
 export class Tree {
-  constructor(width, container, data) {
+  private svg;
+
+  constructor(width: number, container, data) {
     const tree = data => {
-      const root = d3.hierarchy(data);
+      const root = hierarchy(data);
       root['dx'] = 10;
       root['dy'] = width / (root.height + 1);
       return d3.tree().nodeSize([root['dx'], root['dy']])(root);
