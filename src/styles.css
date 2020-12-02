@@ -329,6 +329,8 @@ g.column rect {
 .main-viz {
   position: relative;
   margin: 10px 0;
+  display: flex;
+  justify-content: center;
 }
 
 .main-viz .tick line {

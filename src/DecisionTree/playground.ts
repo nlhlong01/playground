@@ -1,12 +1,8 @@
 /* Copyright 2016 Google Inc. All Rights Reserved.
-Modifications Copyright 2020 Long Nguyen.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +12,8 @@ limitations under the License.
 
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as d3 from 'd3';
-import { HeatMap } from './heatmap';
+import { HeatMap } from '../heatmap';
+// import { Tree } from '../tree';
 import {
   State,
   datasets,
@@ -25,12 +22,12 @@ import {
   getKeyFromValue,
   Problem
 } from './state';
-import { DataGenerator, Example2D, shuffle, isValid } from './dataset';
+import { DataGenerator, Example2D, shuffle, isValid } from '../dataset';
 import 'seedrandom';
 import {
-  RandomForestClassifier as RFClassifier,
-  RandomForestRegression as RFRegressor
-} from 'ml-random-forest';
+  DecisionTreeClassifier as DTClassifier,
+  DecisionTreeRegression as DTRegressor
+} from 'ml-cart';
 import '../styles.css';
 import 'material-design-lite';
 import 'material-design-lite/dist/material.indigo-blue.min.css';
@@ -42,19 +39,18 @@ const NUM_SAMPLES_REGRESS = 800;
 const SIDE_LENGTH = 300;
 // # of points per direction.
 const DENSITY = 50;
-const NUM_VISIBLE_TREES = 16;
 
 const state = State.deserializeState();
 
 const xDomain: [number, number] = [-6, 6];
 // Label values must be scaled before and after training since RF impl does not
 // accepts negative values.
-const inputScale = d3
-  .scaleLinear()
+const inputScale = d3.scale
+  .linear()
   .domain([-1, 1])
   .range([0, 1]);
-const outputScale = d3
-  .scaleLinear()
+const outputScale = d3.scale
+  .linear()
   .domain([0, 1])
   .range([-1, 1]);
 
@@ -68,26 +64,8 @@ const mainHeatMap = new HeatMap(
   { showAxes: true }
 );
 
-// Plot the tree heatmaps.
-const treeHeatMaps: HeatMap[] = new Array(NUM_VISIBLE_TREES);
-for (let i = 0; i < NUM_VISIBLE_TREES; i++) {
-  const container = d3
-    .select('.tree-heatmaps-container')
-    .append('div')
-    .attr('id', `tree-heatmap-${i}`)
-    .attr('class' , 'mdl-cell mdl-cell--3-col');
-  treeHeatMaps[i] = new HeatMap(
-    SIDE_LENGTH / 6,
-    DENSITY,
-    xDomain,
-    xDomain,
-    container,
-    { noSvg: true },
-  );
-}
-
-const colorScale = d3
-  .scaleLinear<string, number>()
+const colorScale = d3.scale
+  .linear<string, number>()
   .domain([-1, 0, 1])
   .range(['#f59322', '#e8eaeb', '#0877bd'])
   .clamp(true);
@@ -95,7 +73,7 @@ const colorScale = d3
 let trainWorker: Worker;
 let options;
 let Method;
-let rf: RFClassifier | RFRegressor;
+let rf: DTClassifier | DTRegressor;
 let data: Example2D[];
 let uploadedData: Example2D[];
 let trainData: Example2D[];
@@ -106,7 +84,6 @@ let accuracy: number;
 let precision: number;
 let recall: number;
 let mainBoundary: number[][];
-let treeBoundaries: number[][][];
 
 /**
  * Prepares the UI on startup.
@@ -130,28 +107,16 @@ function makeGUI() {
       const model = msg.data;
       rf = Method.load(model);
 
-      // Final predictions of RF and predictions of decision trees.
-      const predictions: number[] = new Array(data.length);
-      const treePredictions: number[][] = rf
-        .predictionValues(data.map((d) => [d.x, d.y]))
-        .to2DArray();
+      // const tree = new Tree(
+      //   800,
+      //   d3.select('.tree-visualization'),
+      //   model
+      // );
 
-      for (let i = 0; i < treePredictions.length; i++) {
-        for (let j = 0; j < treePredictions[0].length; j++) {
-          // Rescale predictions back to {-1, 1}
-          treePredictions[i][j] = outputScale(treePredictions[i][j]);
-          // In case of classifier, add the vote counts for each point.
-          if (isClassification()) {
-            const pred = treePredictions[i][j];
-            data[i]['voteCounts'] = data[i]['voteCounts'] || [0, 0];
-            // Increment the vote count of each class.
-            if (pred === -1) data[i]['voteCounts'][0]++;
-            else if (pred === 1) data[i]['voteCounts'][1]++;
-            else throw new Error('Vote is invalid');
-          }
-        }
-        predictions[i] = rf.selection(treePredictions[i]);
-      }
+      // Final predictions of RF and predictions of decision trees.
+      const predictions = rf
+        .predict(data.map((d) => [d.x, d.y]))
+        .map(outputScale);
 
       if (isClassification()) {
         [trainData, testData] = splitTrainTest(data);
@@ -177,7 +142,7 @@ function makeGUI() {
 
   const dataThumbnails = d3.selectAll('canvas[data-dataset]');
   dataThumbnails.on('click', function () {
-    const newDataset = datasets[(this as HTMLElement).dataset.dataset];
+    const newDataset = datasets[this.dataset.dataset];
     if (newDataset === state.dataset) {
       return; // No-op.
     }
@@ -195,9 +160,7 @@ function makeGUI() {
 
   const regDataThumbnails = d3.selectAll('canvas[data-regDataset]');
   regDataThumbnails.on('click', function () {
-    const newDataset = regDatasets[(this as HTMLCanvasElement)
-      .dataset
-      .regdataset];
+    const newDataset = regDatasets[this.dataset.regdataset];
     if (newDataset === state.regDataset) {
       return; // No-op.
     }
@@ -215,19 +178,16 @@ function makeGUI() {
 
   d3.select('#file-input')
     .on('input', async function() {
-      const element = this as HTMLInputElement;
-      const file = element.files[0];
-
+      const file = this.files[0];
       if (file.type !== 'application/json') {
-        element.value = '';
+        this.value = '';
         alert('The uploaded file is not a JSON file.');
         return;
       }
-
       try {
         uploadedData = JSON.parse(await file.text());
         if (!isValid(uploadedData)) {
-          element.value = '';
+          this.value = '';
           uploadedData = [];
           throw Error('The uploaded file does not have a valid format');
         }
@@ -247,37 +207,13 @@ function makeGUI() {
     });
 
   /* Main Column */
-  // Heat maps of the esimators.
-  for (let i = 0; i < NUM_VISIBLE_TREES; i++) {
-    d3.select(`#tree-heatmap-${i} canvas`)
-      .style('border', '2px solid black')
-      .on('mouseenter', () => {
-        mainHeatMap.updateBackground(treeBoundaries[i], state.discretize);
-      })
-      .on('mouseleave', () => {
-        mainHeatMap.updateBackground(mainBoundary, state.discretize);
-      });
-  }
 
   /* Output Column */
-  // Configure the number of trees
-  const nTrees = d3.select('#nTrees').on('input', function () {
-    const element = this as HTMLInputElement;
-    state.nTrees = +element.value;
-    d3.select("label[for='nTrees'] .value")
-      .text(element.value);
-    reset();
-  });
-  nTrees.property('value', state.nTrees);
-  d3.select("label[for='nTrees'] .value")
-    .text(state.nTrees);
-
   // Configure the max depth of each tree.
   const maxDepth = d3.select('#maxDepth').on('input', function () {
-    const element = this as HTMLInputElement;
-    state.maxDepth = +element.value;
+    state.maxDepth = +this.value;
     d3.select("label[for='maxDepth'] .value")
-      .text(element.value);
+      .text(this.value);
     reset();
   });
   maxDepth.property('value', state.maxDepth);
@@ -286,10 +222,9 @@ function makeGUI() {
 
   // Configure the number of samples to train each tree.
   const percSamples = d3.select('#percSamples').on('input', function () {
-    const element = this as HTMLInputElement;
-    state.percSamples = +element.value;
+    state.percSamples = +this.value;
     d3.select("label[for='percSamples'] .value")
-      .text(element.value);
+      .text(this.value);
     reset();
   });
   percSamples.property('value', state.percSamples);
@@ -297,7 +232,7 @@ function makeGUI() {
     .text(state.percSamples);
 
   const problem = d3.select('#problem').on('change', function () {
-    state.problem = problems[(this as HTMLSelectElement).value];
+    state.problem = problems[this.value];
     generateData();
     drawDatasetThumbnails();
     reset();
@@ -305,31 +240,19 @@ function makeGUI() {
   problem.property('value', getKeyFromValue(problems, state.problem));
 
   const showTestData = d3.select('#show-test-data').on('change', function () {
-    state.showTestData = (this as HTMLInputElement).checked;
+    state.showTestData = this.checked;
     state.serialize();
     mainHeatMap.updateTestPoints(state.showTestData ? testData : []);
   });
   // Check/uncheck the checkbox according to the current state.
   showTestData.property('checked', state.showTestData);
 
-  const discretize = d3.select('#discretize').on('change', function () {
-    state.discretize = (this as HTMLInputElement).checked;
-    state.serialize();
-    mainHeatMap.updateBackground(mainBoundary, state.discretize);
-    treeHeatMaps.forEach((map: HeatMap, idx: number) => {
-      map.updateBackground(treeBoundaries[idx], state.discretize);
-    });
-  });
-  // Check/uncheck the checbox according to the current state.
-  discretize.property('checked', state.discretize);
-
   /* Data configurations */
   // Configure the ratio of training data to test data.
   const percTrain = d3.select('#percTrainData').on('input', function () {
-    const element = this as HTMLInputElement;
-    state.percTrainData = +element.value;
+    state.percTrainData = this.value;
     d3.select("label[for='percTrainData'] .value")
-      .text(element.value);
+      .text(this.value);
     reset();
   });
   percTrain.property('value', state.percTrainData);
@@ -338,10 +261,9 @@ function makeGUI() {
 
   // Configure the level of noise.
   const noise = d3.select('#noise').on('input', function () {
-    const element = this as HTMLInputElement;
-    state.noise = +element.value;
+    state.noise = this.value;
     d3.select("label[for='noise'] .value")
-      .text(element.value);
+      .text(this.value);
     generateData();
     reset();
   });
@@ -356,12 +278,14 @@ function makeGUI() {
 
   /* Color map */
   // Add scale to the gradient color map.
-  const x = d3
-    .scaleLinear()
+  const x = d3.scale
+    .linear()
     .domain([-1, 1])
     .range([0, 144]);
-  const xAxis = d3
-    .axisBottom(x)
+  const xAxis = d3.svg
+    .axis()
+    .scale(x)
+    .orient('bottom')
     .tickValues([-1, 0, 1])
     .tickFormat(d3.format('d'));
   d3.select('#colormap g.core')
@@ -372,26 +296,17 @@ function makeGUI() {
 }
 
 function updateDecisionBoundary(): void {
-  let treeIdx: number;
   let i: number;
   let j: number;
 
-  const xScale = d3
-    .scaleLinear()
+  const xScale = d3.scale
+    .linear()
     .domain([0, DENSITY - 1])
     .range(xDomain);
-  const yScale = d3
-    .scaleLinear()
+  const yScale = d3.scale
+    .linear()
     .domain([DENSITY - 1, 0])
     .range(xDomain);
-
-  treeBoundaries = new Array(NUM_VISIBLE_TREES);
-  for (treeIdx = 0; treeIdx < NUM_VISIBLE_TREES; treeIdx++) {
-    treeBoundaries[treeIdx] = new Array(DENSITY);
-    for (i = 0; i < DENSITY; i++) {
-      treeBoundaries[treeIdx][i] = new Array(DENSITY);
-    }
-  }
 
   mainBoundary = new Array(DENSITY);
   for (i = 0; i < DENSITY; i++) {
@@ -401,20 +316,10 @@ function updateDecisionBoundary(): void {
       const y = yScale(j);
 
       // Predict each point in the heatmap.
-      const treePredictions: number[] = rf
-        .predictionValues([[x, y]])
-        .to2DArray()[0];
-      const prediction: number = outputScale(
-        rf.selection(treePredictions)
-      );
+      const prediction = outputScale(rf.predict([[x, y]]));
 
       // Adds predictions to boundaries.
       mainBoundary[i][j] = prediction;
-      for (treeIdx = 0; treeIdx < NUM_VISIBLE_TREES; treeIdx++) {
-        treeBoundaries[treeIdx][i][j] = outputScale(
-          treePredictions[treeIdx]
-        );
-      }
     }
   }
 }
@@ -476,9 +381,6 @@ function score(predClass: number[], trueClass: number[]) {
 function updateUI(reset = false) {
   if (!reset) updateDecisionBoundary();
   mainHeatMap.updateBackground(mainBoundary, state.discretize);
-  for (let i = 0; i < treeHeatMaps.length; i++) {
-    treeHeatMaps[i].updateBackground(treeBoundaries[i], state.discretize);
-  }
 
   const updateMetric = (selector: string, value: number): void => {
     d3.select(selector).text(value.toFixed(3));
@@ -502,16 +404,12 @@ function reset(onStartup = false) {
 
   trainWorker = new Worker();
   options = {
-    nEstimators: state.nTrees,
     maxSamples: state.percSamples / 100,
-    maxFeatures: 1.0,
-    treeOptions: { maxDepth: state.maxDepth },
-    seed: undefined,
-    useSampleBagging: true,
-    replacement: false
+    maxDepth: state.maxDepth,
+    minNumSamples: state.minNumSamples,
   };
 
-  Method = isClassification() ? RFClassifier : RFRegressor;
+  Method = isClassification() ? DTClassifier : DTRegressor;
   rf = null;
   d3.select("#start-button .value")
     .text(isClassification() ? 'classify' : 'regress');
@@ -523,16 +421,10 @@ function reset(onStartup = false) {
   recall = 0;
 
   mainBoundary = new Array(DENSITY);
-  treeBoundaries = new Array(NUM_VISIBLE_TREES);
-  for (let treeIdx = 0; treeIdx < NUM_VISIBLE_TREES; treeIdx++) {
-    treeBoundaries[treeIdx] = new Array(DENSITY);
-    for (let x = 0; x < DENSITY; x++) {
-      mainBoundary[x] = new Array(DENSITY);
-      treeBoundaries[treeIdx][x] = new Array(DENSITY);
-    }
+  for (let i = 0; i < DENSITY; i++) {
+    mainBoundary[i] = new Array(DENSITY);
   }
 
-  uploadedData = uploadedData || [];
   data.forEach((d) => {
     delete d.voteCounts;
   });

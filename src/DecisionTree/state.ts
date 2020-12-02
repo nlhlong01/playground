@@ -1,5 +1,5 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 /* Copyright 2016 Google Inc. All Rights Reserved.
-Modifications Copyright 2020 Long Nguyen.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,8 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-/* eslint-disable @typescript-eslint/naming-convention */
-import * as dataset from './dataset';
+import * as dataset from '../dataset';
 import 'seedrandom';
 
 /** A map between dataset names and functions generating classification data. */
@@ -73,14 +72,13 @@ export class State {
     { name: 'dataset', type: Type.OBJECT, keyMap: datasets },
     { name: 'regDataset', type: Type.OBJECT, keyMap: regDatasets },
     { name: 'noise', type: Type.NUMBER },
-    { name: 'seed', type: Type.STRING },
     { name: 'showTestData', type: Type.BOOLEAN },
-    { name: 'discretize', type: Type.BOOLEAN },
     { name: 'percTrainData', type: Type.NUMBER },
     { name: 'problem', type: Type.OBJECT, keyMap: problems },
+    { name: 'seed', type: Type.STRING },
     { name: 'percSamples', type: Type.NUMBER },
-    { name: 'nTrees', type: Type.NUMBER },
-    { name: 'maxDepth', type: Type.NUMBER }
+    { name: 'maxDepth', type: Type.NUMBER },
+    { name: 'minNumSamples', type: Type.NUMBER }
   ];
 
   [key: string]: any;
@@ -93,8 +91,8 @@ export class State {
   regDataset: dataset.DataGenerator = dataset.regressPlane;
   seed: string;
   percSamples = 80;
-  nTrees = 100;
   maxDepth = 5;
+  minNumSamples = 3;
 
   /**
    * Deserializes the state from the url hash.
