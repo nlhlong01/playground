@@ -1,12 +1,20 @@
 # Machine Learning playground
 
+## Description
+
 Machine Learning playground is an interactive visualization of 3 ML algorithms:
 Random Forest, Decision Tree and Support Vector Machine (SVM).
 
-Tech stack: TypeScript, D3.js, Webpack.
+Tech stack: TypeScript, D3, Webpack, Cypress, Material Design.
 
-This project is a fork of the [Tensorflow's Deep Machine Learning](https://playground.tensorflow.org).
+This project is built on the [Tensorflow's Deep Machine Learning](https://playground.tensorflow.org).
 The UI of the Random Forest Playground is inspired by [Alex Rogozhnikov's Gradient Boosting Interactive Playground](https://arogozhnikov.github.io/)
+
+## Deployment
+
+- Random Forest:
+  - [1-dimensional](https://nlhlong01.github.io/playground/rf1d.html).
+  - [2-dimensional](https://nlhlong01.github.io/playground).
 
 ## Development
 
