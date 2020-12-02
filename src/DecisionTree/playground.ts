@@ -13,7 +13,7 @@ limitations under the License.
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as d3 from 'd3';
 import { HeatMap } from '../heatmap';
-// import { Tree } from '../tree';
+import { Tree } from '../tree';
 import {
   State,
   datasets,
@@ -107,11 +107,11 @@ function makeGUI() {
       const model = msg.data;
       rf = Method.load(model);
 
-      // const tree = new Tree(
-      //   800,
-      //   d3.select('.tree-visualization'),
-      //   model
-      // );
+      const tree = new Tree(
+        800,
+        d3.select('.tree-visualization'),
+        model
+      );
 
       // Final predictions of RF and predictions of decision trees.
       const predictions = rf
