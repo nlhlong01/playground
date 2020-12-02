@@ -175,7 +175,7 @@ export class LineChart {
     selection
       .enter()
       .append('circle')
-      .attr('r', 3);
+      .attr('r', 2.5);
 
     // Update points to be in the correct position.
     selection

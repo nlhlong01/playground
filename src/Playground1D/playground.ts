@@ -46,7 +46,7 @@ const mainLineChart = new LineChart(
   { showAxes: true }
 );
 
-// Plot the tree linecharts.
+// Plot the tree line charts.
 const treeLineCharts: LineChart[] = new Array(NUM_VISIBLE_TREES);
 for (let i = 0; i < NUM_VISIBLE_TREES; i++) {
   const container = d3
@@ -85,22 +85,26 @@ function makeGUI() {
     regressor = new RFRegressor(options);
     regressor.train(data.map((d) => [d.x]), data.map((d) => d.y));
 
+    // Initiate empty tree curves.
     treeCurves = new Array(NUM_VISIBLE_TREES);
     for (treeIdx = 0; treeIdx < treeCurves.length; treeIdx++) {
       treeCurves[treeIdx] = new Array(DENSITY);
     }
 
+    // Initiate empty main curve.
     curve = new Array(DENSITY);
     for (pointIdx = 0; pointIdx < curve.length; pointIdx++) {
       const x = xScale(pointIdx);
       const treePredictions: number[] = regressor
         .predictionValues([[x]])
         .to2DArray()[0];
+
       for (treeIdx = 0; treeIdx < treeCurves.length; treeIdx++) {
         const y = treePredictions[treeIdx];
         treeCurves[treeIdx][pointIdx] = { x, y };
       }
-      // Get the final prediction based on estimators' predictions.
+
+      // Get the final prediction which is the mean of trees' predictions.
       const prediction: number = regressor.selection(treePredictions);
       const y = prediction;
       curve[pointIdx] = { x, y };
