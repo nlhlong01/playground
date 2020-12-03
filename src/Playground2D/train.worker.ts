@@ -1,4 +1,3 @@
-// import { RFClassifier } from './RandomForest/classifier';
 import {
   RandomForestClassifier as RFClassifier,
   RandomForestRegression as RFRegressor
