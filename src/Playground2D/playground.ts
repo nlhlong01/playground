@@ -195,7 +195,7 @@ function makeGUI() {
 
   const regDataThumbnails = d3.selectAll('canvas[data-regDataset]');
   regDataThumbnails.on('click', function () {
-    const newDataset = regDatasets[(this as HTMLElement)
+    const newDataset = regDatasets[(this as HTMLCanvasElement)
       .dataset
       .regdataset];
     if (newDataset === state.regDataset) {
@@ -215,16 +215,19 @@ function makeGUI() {
 
   d3.select('#file-input')
     .on('input', async function() {
-      const file = this.files[0];
+      const element = this as HTMLInputElement;
+      const file = element.files[0];
+
       if (file.type !== 'application/json') {
-        this.value = '';
+        element.value = '';
         alert('The uploaded file is not a JSON file.');
         return;
       }
+
       try {
         uploadedData = JSON.parse(await file.text());
         if (!isValid(uploadedData)) {
-          this.value = '';
+          element.value = '';
           uploadedData = [];
           throw Error('The uploaded file does not have a valid format');
         }
@@ -259,9 +262,10 @@ function makeGUI() {
   /* Output Column */
   // Configure the number of trees
   const nTrees = d3.select('#nTrees').on('input', function () {
-    state.nTrees = +this.value;
+    const element = this as HTMLInputElement;
+    state.nTrees = +element.value;
     d3.select("label[for='nTrees'] .value")
-      .text(this.value);
+      .text(element.value);
     reset();
   });
   nTrees.property('value', state.nTrees);
@@ -270,9 +274,10 @@ function makeGUI() {
 
   // Configure the max depth of each tree.
   const maxDepth = d3.select('#maxDepth').on('input', function () {
-    state.maxDepth = +this.value;
+    const element = this as HTMLInputElement;
+    state.maxDepth = +element.value;
     d3.select("label[for='maxDepth'] .value")
-      .text(this.value);
+      .text(element.value);
     reset();
   });
   maxDepth.property('value', state.maxDepth);
@@ -281,25 +286,18 @@ function makeGUI() {
 
   // Configure the number of samples to train each tree.
   const percSamples = d3.select('#percSamples').on('input', function () {
-    state.percSamples = +this.value;
+    const element = this as HTMLInputElement;
+    state.percSamples = +element.value;
     d3.select("label[for='percSamples'] .value")
-      .text(this.value);
+      .text(element.value);
     reset();
   });
   percSamples.property('value', state.percSamples);
   d3.select("label[for='percSamples'] .value")
     .text(state.percSamples);
 
-  // Configure the maximum bagged feature.
-  const maxFeatures = d3.select('#maxFeatures').on('change', function () {
-    state.maxFeatures = +this.value;
-    state.serialize();
-    reset();
-  });
-  maxFeatures.property('value', state.maxFeatures);
-
   const problem = d3.select('#problem').on('change', function () {
-    state.problem = problems[this.value];
+    state.problem = problems[(this as HTMLSelectElement).value];
     generateData();
     drawDatasetThumbnails();
     reset();
@@ -307,7 +305,7 @@ function makeGUI() {
   problem.property('value', getKeyFromValue(problems, state.problem));
 
   const showTestData = d3.select('#show-test-data').on('change', function () {
-    state.showTestData = this.checked;
+    state.showTestData = (this as HTMLInputElement).checked;
     state.serialize();
     mainHeatMap.updateTestPoints(state.showTestData ? testData : []);
   });
@@ -315,7 +313,7 @@ function makeGUI() {
   showTestData.property('checked', state.showTestData);
 
   const discretize = d3.select('#discretize').on('change', function () {
-    state.discretize = this.checked;
+    state.discretize = (this as HTMLInputElement).checked;
     state.serialize();
     mainHeatMap.updateBackground(mainBoundary, state.discretize);
     treeHeatMaps.forEach((map: HeatMap, idx: number) => {
@@ -328,9 +326,10 @@ function makeGUI() {
   /* Data configurations */
   // Configure the ratio of training data to test data.
   const percTrain = d3.select('#percTrainData').on('input', function () {
-    state.percTrainData = this.value;
+    const element = this as HTMLInputElement;
+    state.percTrainData = +element.value;
     d3.select("label[for='percTrainData'] .value")
-      .text(this.value);
+      .text(element.value);
     reset();
   });
   percTrain.property('value', state.percTrainData);
@@ -339,9 +338,10 @@ function makeGUI() {
 
   // Configure the level of noise.
   const noise = d3.select('#noise').on('input', function () {
-    state.noise = this.value;
+    const element = this as HTMLInputElement;
+    state.noise = +element.value;
     d3.select("label[for='noise'] .value")
-      .text(this.value);
+      .text(element.value);
     generateData();
     reset();
   });
@@ -360,10 +360,8 @@ function makeGUI() {
     .scaleLinear()
     .domain([-1, 1])
     .range([0, 144]);
-  const xAxis = d3.svg
-    .axis()
-    .scale(x)
-    .orient('bottom')
+  const xAxis = d3
+    .axisBottom(x)
     .tickValues([-1, 0, 1])
     .tickFormat(d3.format('d'));
   d3.select('#colormap g.core')
