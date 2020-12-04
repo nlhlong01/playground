@@ -532,6 +532,7 @@ function reset(onStartup = false) {
     }
   }
 
+  uploadedData = uploadedData || [];
   data.forEach((d) => {
     delete d.voteCounts;
   });

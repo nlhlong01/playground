@@ -264,6 +264,8 @@ function reset() {
   };
   regressor = null;
 
+  uploadedData = uploadedData || [];
+
   curve = new Array(NUM_SAMPLES);
   treeCurves = new Array(NUM_VISIBLE_TREES);
   for (let i = 0; i < treeCurves.length; i++) {

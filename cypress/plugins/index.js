@@ -5,8 +5,7 @@
  */
 module.exports = (on, config) => {
   const options = {
-    webpackOptions: require('../../webpack.dev'),
-    watchOptions: {}
+    webpackOptions: require('../../webpack.dev')
   };
   on('file:preprocessor', require('@cypress/webpack-preprocessor')(options));
 
