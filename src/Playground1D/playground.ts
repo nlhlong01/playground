@@ -81,8 +81,8 @@ function makeGUI() {
   d3.select('#start-button').on('click', () => {
     let pointIdx: number;
     let treeIdx = 0;
-    const xScale = d3.scale
-      .linear()
+    const xScale = d3
+      .scaleLinear()
       .domain([0, DENSITY - 1])
       .range(xDomain);
 

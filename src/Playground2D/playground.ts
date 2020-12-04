@@ -49,12 +49,12 @@ const state = State.deserializeState();
 const xDomain: [number, number] = [-6, 6];
 // Label values must be scaled before and after training since RF impl does not
 // accepts negative values.
-const inputScale = d3.scale
-  .linear()
+const inputScale = d3
+  .scaleLinear()
   .domain([-1, 1])
   .range([0, 1]);
-const outputScale = d3.scale
-  .linear()
+const outputScale = d3
+  .scaleLinear()
   .domain([0, 1])
   .range([-1, 1]);
 
@@ -86,8 +86,8 @@ for (let i = 0; i < NUM_VISIBLE_TREES; i++) {
   );
 }
 
-const colorScale = d3.scale
-  .linear<string, number>()
+const colorScale = d3
+  .scaleLinear<string, number>()
   .domain([-1, 0, 1])
   .range(['#f59322', '#e8eaeb', '#0877bd'])
   .clamp(true);
@@ -354,8 +354,8 @@ function makeGUI() {
 
   /* Color map */
   // Add scale to the gradient color map.
-  const x = d3.scale
-    .linear()
+  const x = d3
+    .scaleLinear()
     .domain([-1, 1])
     .range([0, 144]);
   const xAxis = d3.svg
@@ -376,12 +376,12 @@ function updateDecisionBoundary(): void {
   let i: number;
   let j: number;
 
-  const xScale = d3.scale
-    .linear()
+  const xScale = d3
+    .scaleLinear()
     .domain([0, DENSITY - 1])
     .range(xDomain);
-  const yScale = d3.scale
-    .linear()
+  const yScale = d3
+    .scaleLinear()
     .domain([DENSITY - 1, 0])
     .range(xDomain);
 

@@ -18,8 +18,8 @@ export class LineChart {
     showAxes: false,
     noPoint: false
   };
-  private xScale: d3.scale.Linear<number, number>;
-  private yScale: d3.scale.Linear<number, number>;
+  private xScale: d3.ScaleLinear<number, number>;
+  private yScale: d3.ScaleLinear<number, number>;
   private svg;
 
   constructor(
@@ -39,13 +39,13 @@ export class LineChart {
       }
     }
 
-    this.xScale = d3.scale
-      .linear()
+    this.xScale = d3
+      .scaleLinear()
       .domain(xDomain)
       .range([0, width - 2 * padding]);
 
-    this.yScale = d3.scale
-      .linear()
+    this.yScale = d3
+      .scaleLinear()
       .domain(yDomain)
       .range([height - 2 * padding, 0]);
 
@@ -77,15 +77,8 @@ export class LineChart {
     }
 
     if (this.settings.showAxes) {
-      const xAxis = d3.svg
-        .axis()
-        .scale(this.xScale)
-        .orient('bottom');
-
-      const yAxis = d3.svg
-        .axis()
-        .scale(this.yScale)
-        .orient('right');
+      const xAxis = d3.axisBottom(this.xScale);
+      const yAxis = d3.axisRight(this.yScale);
 
       this.svg
         .append('g')
@@ -123,7 +116,7 @@ export class LineChart {
       )
     );
 
-    const line = d3.svg
+    const line = d3
       .line<{ x: number; y: number }>()
       .x((d) => this.xScale(d.x))
       .y((d) => this.yScale(d.y));
