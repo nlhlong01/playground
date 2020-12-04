@@ -177,7 +177,7 @@ function makeGUI() {
 
   const dataThumbnails = d3.selectAll('canvas[data-dataset]');
   dataThumbnails.on('click', function () {
-    const newDataset = datasets[this.dataset.dataset];
+    const newDataset = datasets[(this as HTMLElement).dataset.dataset];
     if (newDataset === state.dataset) {
       return; // No-op.
     }
@@ -195,7 +195,9 @@ function makeGUI() {
 
   const regDataThumbnails = d3.selectAll('canvas[data-regDataset]');
   regDataThumbnails.on('click', function () {
-    const newDataset = regDatasets[this.dataset.regdataset];
+    const newDataset = regDatasets[(this as HTMLElement)
+      .dataset
+      .regdataset];
     if (newDataset === state.regDataset) {
       return; // No-op.
     }
