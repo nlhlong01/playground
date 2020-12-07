@@ -8,11 +8,12 @@
     "lint": "eslint src",
     "build": "webpack --config webpack.prod.js",
     "start": "webpack-dev-server --config webpack.dev.js",
-    "cy:run": "cypress run",
-    "cy:open": "cypress open",
-    "test": "start-server-and-test start http-get://localhost:5000 cy:run",
-    "test:dev": "start-server-and-test start http-get://localhost:5000 cy:open",
+    "test:run": "cypress run",
+    "test:open": "cypress open",
+    "test": "start-server-and-test start http-get://localhost:5000 test:run",
+    "test:dev": "start-server-and-test start http-get://localhost:5000 test:open",
     "test:coverage": "nyc npm run test",
+    "test:run:coverage": "nyc npm run test:run",
     "deploy": "npm run build && rimraf docs/* && copyfiles -f dist/* docs"
   },
   "devDependencies": {

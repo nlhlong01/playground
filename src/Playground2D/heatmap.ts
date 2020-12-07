@@ -93,13 +93,13 @@ export class HeatMap {
       .domain([-1, 1])
       .range(colors);
 
-    container = container.append('div').style({
-      width: `${width}px`,
-      height: `${height}px`,
-      position: 'relative',
-      top: `-${padding}px`,
-      left: `-${padding}px`
-    });
+    container = container
+      .append('div')
+      .style('width', `${width}px`)
+      .style('height', `${height}px`)
+      .style('position', 'relative')
+      .style('top', `-${padding}px`)
+      .style('left', `-${padding}px`);
 
     this.canvas = container
       .append('canvas')
@@ -114,16 +114,12 @@ export class HeatMap {
     if (!this.settings.noSvg) {
       this.svg = container
         .append('svg')
-        .attr({
-          width: width,
-          height: height
-        })
-        .style({
-          // Overlay the svg on top of the canvas.
-          position: 'absolute',
-          left: '0',
-          top: '0'
-        })
+        .attr('width', width)
+        .attr('height', height)
+        // Overlay the svg on top of the canvas.
+        .style('position', 'absolute')
+        .style('left', '0')
+        .style('top', '0')
         .append('g')
         .attr('transform', `translate(${padding}, ${padding})`);
 
@@ -228,10 +224,8 @@ export class HeatMap {
 
     // Update points to be in the correct position.
     selection
-      .attr({
-        cx: (d: Example2D) => this.xScale(d.x),
-        cy: (d: Example2D) => this.yScale(d.y)
-      })
+      .attr('cx', (d: Example2D) => this.xScale(d.x))
+      .attr('cy', (d: Example2D) => this.yScale(d.y))
       .style('fill', (d) => this.color(d.label));
 
     // Remove points if the length has gone down.
