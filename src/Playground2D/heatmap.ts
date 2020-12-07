@@ -37,8 +37,8 @@ export class HeatMap {
     showAxes: false,
     noSvg: false
   };
-  private xScale: d3.scale.Linear<number, number>;
-  private yScale: d3.scale.Linear<number, number>;
+  private xScale: d3.ScaleLinear<number, number>;
+  private yScale: d3.ScaleLinear<number, number>;
   private numSamples: number;
   private color;
   private canvas;
@@ -63,19 +63,19 @@ export class HeatMap {
       }
     }
 
-    this.xScale = d3.scale
-      .linear()
+    this.xScale = d3
+      .scaleLinear()
       .domain(xDomain)
       .range([0, width - 2 * padding]);
 
-    this.yScale = d3.scale
-      .linear()
+    this.yScale = d3
+      .scaleLinear()
       .domain(yDomain)
       .range([height - 2 * padding, 0]);
 
     // Get a range of colors.
-    const tmpScale = d3.scale
-      .linear<string, number>()
+    const tmpScale = d3
+      .scaleLinear<string, number>()
       .domain([0, 0.5, 1])
       .range(['#f59322', '#e8eaeb', '#0877bd'])
       .clamp(true);
@@ -88,18 +88,18 @@ export class HeatMap {
       .range(0, 1 + 1e-9, 1 / NUM_SHADES)
       .map((a) => tmpScale(a));
 
-    this.color = d3.scale
-      .quantize()
+    this.color = d3
+      .scaleQuantize()
       .domain([-1, 1])
       .range(colors);
 
-    container = container.append('div').style({
-      width: `${width}px`,
-      height: `${height}px`,
-      position: 'relative',
-      top: `-${padding}px`,
-      left: `-${padding}px`
-    });
+    container = container
+      .append('div')
+      .style('width', `${width}px`)
+      .style('height', `${height}px`)
+      .style('position', 'relative')
+      .style('top', `-${padding}px`)
+      .style('left', `-${padding}px`);
 
     this.canvas = container
       .append('canvas')
@@ -114,16 +114,12 @@ export class HeatMap {
     if (!this.settings.noSvg) {
       this.svg = container
         .append('svg')
-        .attr({
-          width: width,
-          height: height
-        })
-        .style({
-          // Overlay the svg on top of the canvas.
-          position: 'absolute',
-          left: '0',
-          top: '0'
-        })
+        .attr('width', width)
+        .attr('height', height)
+        // Overlay the svg on top of the canvas.
+        .style('position', 'absolute')
+        .style('left', '0')
+        .style('top', '0')
         .append('g')
         .attr('transform', `translate(${padding}, ${padding})`);
 
@@ -132,15 +128,8 @@ export class HeatMap {
     }
 
     if (this.settings.showAxes) {
-      const xAxis = d3.svg
-        .axis()
-        .scale(this.xScale)
-        .orient('bottom');
-
-      const yAxis = d3.svg
-        .axis()
-        .scale(this.yScale)
-        .orient('right');
+      const xAxis = d3.axisBottom(this.xScale);
+      const yAxis = d3.axisRight(this.yScale);
 
       this.svg
         .append('g')
@@ -235,10 +224,8 @@ export class HeatMap {
 
     // Update points to be in the correct position.
     selection
-      .attr({
-        cx: (d: Example2D) => this.xScale(d.x),
-        cy: (d: Example2D) => this.yScale(d.y)
-      })
+      .attr('cx', (d: Example2D) => this.xScale(d.x))
+      .attr('cy', (d: Example2D) => this.yScale(d.y))
       .style('fill', (d) => this.color(d.label));
 
     // Remove points if the length has gone down.
@@ -254,13 +241,12 @@ export class HeatMap {
         );
 
         const container = d3.select('#main-heatmap canvas');
-        const coordinates = d3.mouse(container.node());
+        const coordinates = d3.pointer(container.node());
 
-        hoverCard.style({
-          left: `${coordinates[0] + 20}px`,
-          top: `${coordinates[1]}px`,
-          display: 'block'
-        });
+        hoverCard
+          .style('left', `${coordinates[0] + 20}px`)
+          .style('top', `${coordinates[1]}px`)
+          .style('display', 'block');
 
         d3.select('#hovercard.ui-nvotes #first-class.value')
           .text(d.voteCounts[0]);

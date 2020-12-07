@@ -81,8 +81,8 @@ function makeGUI() {
   d3.select('#start-button').on('click', () => {
     let pointIdx: number;
     let treeIdx = 0;
-    const xScale = d3.scale
-      .linear()
+    const xScale = d3
+      .scaleLinear()
       .domain([0, DENSITY - 1])
       .range(xDomain);
 
@@ -126,10 +126,11 @@ function makeGUI() {
 
   const dataThumbnails = d3.selectAll('canvas[data-dataset]');
   dataThumbnails.on('click', function () {
-    const newDataset = datasets[this.dataset.dataset];
+    const element = this as HTMLCanvasElement;
+    const newDataset = datasets[element.dataset.dataset];
     state.dataset = newDataset;
     dataThumbnails.classed('selected', false);
-    d3.select(this).classed('selected', true);
+    d3.select(element).classed('selected', true);
     generateData();
     reset();
   });
@@ -141,16 +142,19 @@ function makeGUI() {
 
   d3.select('#file-input')
     .on('input', async function() {
-      const file = this.files[0];
+      const element = this as HTMLInputElement;
+      const file = element.files[0];
+
       if (file.type !== 'application/json') {
-        this.value = '';
+        element.value = '';
         alert('The uploaded file is not a JSON file.');
         return;
       }
+
       try {
         uploadedData = JSON.parse(await file.text());
         if (!isValid(uploadedData)) {
-          this.value = '';
+          element.value = '';
           uploadedData = [];
           throw Error('The uploaded file does not have a valid format');
         }
@@ -184,9 +188,10 @@ function makeGUI() {
   /* Output Column */
   // Configure the number of trees
   const nTrees = d3.select('#nTrees').on('input', function () {
-    state.nTrees = +this.value;
+    const element = this as HTMLInputElement;
+    state.nTrees = +element.value;
     d3.select("label[for='nTrees'] .value")
-      .text(this.value);
+      .text(element.value);
     reset();
   });
   nTrees.property('value', state.nTrees);
@@ -195,9 +200,10 @@ function makeGUI() {
 
   // Configure the max depth of each tree.
   const maxDepth = d3.select('#maxDepth').on('input', function () {
-    state.maxDepth = +this.value;
+    const element = this as HTMLInputElement;
+    state.maxDepth = +element.value;
     d3.select("label[for='maxDepth'] .value")
-      .text(this.value);
+      .text(element.value);
     reset();
   });
   maxDepth.property('value', state.maxDepth);
@@ -206,9 +212,10 @@ function makeGUI() {
 
   // Configure the number of samples to train each tree.
   const percSamples = d3.select('#percSamples').on('input', function () {
-    state.percSamples = +this.value;
+    const element = this as HTMLInputElement;
+    state.percSamples = +element.value;
     d3.select("label[for='percSamples'] .value")
-      .text(this.value);
+      .text(element.value);
     reset();
   });
   percSamples.property('value', state.percSamples);
@@ -218,9 +225,10 @@ function makeGUI() {
   /* Data configurations */
   // Configure the level of noise.
   const noise = d3.select('#noise').on('input', function () {
-    state.noise = this.value;
+    const element = this as HTMLInputElement;
+    state.noise = +element.value;
     d3.select("label[for='noise'] .value")
-      .text(this.value);
+      .text(element.value);
     generateData();
     reset();
   });

@@ -18,8 +18,8 @@ export class LineChart {
     showAxes: false,
     noPoint: false
   };
-  private xScale: d3.scale.Linear<number, number>;
-  private yScale: d3.scale.Linear<number, number>;
+  private xScale: d3.ScaleLinear<number, number>;
+  private yScale: d3.ScaleLinear<number, number>;
   private svg;
 
   constructor(
@@ -39,36 +39,32 @@ export class LineChart {
       }
     }
 
-    this.xScale = d3.scale
-      .linear()
+    this.xScale = d3
+      .scaleLinear()
       .domain(xDomain)
       .range([0, width - 2 * padding]);
 
-    this.yScale = d3.scale
-      .linear()
+    this.yScale = d3
+      .scaleLinear()
       .domain(yDomain)
       .range([height - 2 * padding, 0]);
 
-    container = container.append('div').style({
-      width: `${width}px`,
-      height: `${height}px`,
-      position: 'relative',
-      top: `-${padding}px`,
-      left: `-${padding}px`
-    });
+    container = container
+      .append('div')
+      .style('width', `${width}px`)
+      .style('height', `${height}px`)
+      .style('position', 'relative')
+      .style('top', `-${padding}px`)
+      .style('left', `-${padding}px`);
 
     this.svg = container
       .append('svg')
-      .attr({
-        width: width,
-        height: height
-      })
-      .style({
-        // Overlay the svg on top of the canvas.
-        position: 'absolute',
-        left: '0',
-        top: '0'
-      })
+      .attr('width', width)
+      .attr('height', height)
+      // Overlay the svg on top of the canvas.
+      .style('position', 'absolute')
+      .style('left', '0')
+      .style('top', '0')
       .append('g')
       .attr('transform', `translate(${padding}, ${padding})`);
 
@@ -77,15 +73,8 @@ export class LineChart {
     }
 
     if (this.settings.showAxes) {
-      const xAxis = d3.svg
-        .axis()
-        .scale(this.xScale)
-        .orient('bottom');
-
-      const yAxis = d3.svg
-        .axis()
-        .scale(this.yScale)
-        .orient('right');
+      const xAxis = d3.axisBottom(this.xScale);
+      const yAxis = d3.axisRight(this.yScale);
 
       this.svg
         .append('g')
@@ -123,7 +112,7 @@ export class LineChart {
       )
     );
 
-    const line = d3.svg
+    const line = d3
       .line<{ x: number; y: number }>()
       .x((d) => this.xScale(d.x))
       .y((d) => this.yScale(d.y));
@@ -164,10 +153,8 @@ export class LineChart {
 
     // Update points to be in the correct position.
     selection
-      .attr({
-        cx: (d) => this.xScale(d.x),
-        cy: (d) => this.yScale(d.y)
-      })
+      .attr('cx', (d) => this.xScale(d.x))
+      .attr('cy', (d) => this.yScale(d.y))
       .style('fill', () => 'slateblue');
 
     // Remove points if the length has gone down.
