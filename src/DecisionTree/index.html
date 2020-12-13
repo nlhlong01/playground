@@ -91,9 +91,9 @@ limitations under the License.
         </div>
       </div>
 
-      <hr>
+      <!-- <hr> -->
 
-      <div class="upload-data">
+      <!-- <div class="upload-data">
         <p>Upload your own dataset</p>
         <label for="file-input" class="basic-button" style="width: auto; text-align: center;">
           Choose file
@@ -103,10 +103,10 @@ limitations under the License.
         <button class="basic-button" id="file-select">
           Use dataset
         </button>
-      </div>
+      </div> -->
     </div>
 
-    <div class="main-column">
+    <div class="dt main-column">
       <h4><span>Output</span></h4>
 
       <div id="main-heatmap">
@@ -131,9 +131,6 @@ limitations under the License.
             </g>
           </svg>
         </div>
-      </div>
-
-      <div class="tree-vizualization">
       </div>
 
       <div class="metrics">
@@ -176,7 +173,7 @@ limitations under the License.
         <label for="maxDepth">Tree depth:&nbsp;&nbsp;<span class="value">XX</span></label>
         <p class="slider">
           <input id="maxDepth" class="mdl-slider mdl-js-slider" type="range"
-          min="1" max="20" value="5" step="1">
+          min="1" max="10" step="1">
         </p>
       </div>
 
@@ -198,6 +195,10 @@ limitations under the License.
         <span class="value"></span>
       </button>
     </div>
+  </div>
+
+  <div class="l--body">
+    <div class="tree-visualization"></div>
   </div>
 
   <script src="DecisionTree.bundle.js"></script>

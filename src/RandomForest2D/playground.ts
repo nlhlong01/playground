@@ -26,7 +26,7 @@ import {
   Problem
 } from './state';
 import { DataGenerator, Example2D, shuffle, isValid } from '../dataset';
-import '../RandomForest1D/node_modules/seedrandom';
+import 'seedrandom';
 import {
   RandomForestClassifier as RFClassifier,
   RandomForestRegression as RFRegressor

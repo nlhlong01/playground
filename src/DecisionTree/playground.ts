@@ -31,7 +31,6 @@ import {
 import '../styles.css';
 import 'material-design-lite';
 import 'material-design-lite/dist/material.indigo-blue.min.css';
-import Worker from 'worker-loader!./train.worker';
 
 const NUM_SAMPLES_CLASSIFY = 400;
 const NUM_SAMPLES_REGRESS = 800;
@@ -45,12 +44,12 @@ const state = State.deserializeState();
 const xDomain: [number, number] = [-6, 6];
 // Label values must be scaled before and after training since RF impl does not
 // accepts negative values.
-const inputScale = d3.scale
-  .linear()
+const inputScale = d3
+  .scaleLinear()
   .domain([-1, 1])
   .range([0, 1]);
-const outputScale = d3.scale
-  .linear()
+const outputScale = d3
+  .scaleLinear()
   .domain([0, 1])
   .range([-1, 1]);
 
@@ -64,16 +63,15 @@ const mainHeatMap = new HeatMap(
   { showAxes: true }
 );
 
-const colorScale = d3.scale
-  .linear<string, number>()
+const colorScale = d3
+  .scaleLinear<string, number>()
   .domain([-1, 0, 1])
   .range(['#f59322', '#e8eaeb', '#0877bd'])
   .clamp(true);
 
-let trainWorker: Worker;
 let options;
 let Method;
-let rf: DTClassifier | DTRegressor;
+let dt: DTClassifier | DTRegressor;
 let data: Example2D[];
 let uploadedData: Example2D[];
 let trainData: Example2D[];
@@ -90,48 +88,56 @@ let mainBoundary: number[][];
  */
 function makeGUI() {
   d3.select('#start-button').on('click', () => {
-    isLoading(true);
+    dt = new Method(options);
+    dt.train(
+      trainData.map((d) => [d.x, d.y]),
+      trainData.map((d) => inputScale(d.label))
+    );
 
-    trainWorker.terminate();
-    trainWorker = new Worker();
+    // const model = {
+    //   name: 'a',
+    //   children: [
+    //     {
+    //       name: 'b'
+    //     },
+    //     {
+    //       name: 'c',
+    //       children: [
+    //         {
+    //           name: 'd'
+    //         },
+    //         {
+    //           name: 'e'
+    //         }
+    //       ]
+    //     }
+    //   ]
+    // };
 
-    trainWorker.postMessage({
-      options: options,
-      trainingSet: trainData.map((d) => [d.x, d.y]),
-      // Scale the input label to avoid negative class labels.
-      labels: trainData.map((d) => inputScale(d.label)),
-      isClassifier: isClassification()
-    });
+    const tree = new Tree(
+      500,
+      d3.select('.tree-visualization'),
+      JSON.parse(JSON.stringify(dt)).root
+      // model
+    );
 
-    trainWorker.onmessage = (msg: MessageEvent) => {
-      const model = msg.data;
-      rf = Method.load(model);
+    // Final predictions of RF and predictions of decision trees.
+    const predictions = dt
+      .predict(data.map((d) => [d.x, d.y]))
+      .map(outputScale);
 
-      const tree = new Tree(
-        800,
-        d3.select('.tree-visualization'),
-        model
-      );
+    if (isClassification()) {
+      [trainData, testData] = splitTrainTest(data);
+      const [trainPredictions, testPredictions] = splitTrainTest(predictions);
+      const labels = data.map((d) => d.label);
+      const [trainLabels, testLabels] = splitTrainTest(labels);
 
-      // Final predictions of RF and predictions of decision trees.
-      const predictions = rf
-        .predict(data.map((d) => [d.x, d.y]))
-        .map(outputScale);
+      lossTrain = getLoss(trainPredictions, trainLabels);
+      lossTest = getLoss(testPredictions, testLabels);
+      ({ accuracy, precision, recall } = score(testPredictions, testLabels));
+    }
 
-      if (isClassification()) {
-        [trainData, testData] = splitTrainTest(data);
-        const [trainPredictions, testPredictions] = splitTrainTest(predictions);
-        const labels = data.map((d) => d.label);
-        const [trainLabels, testLabels] = splitTrainTest(labels);
-
-        lossTrain = getLoss(trainPredictions, trainLabels);
-        lossTest = getLoss(testPredictions, testLabels);
-        ({ accuracy, precision, recall } = score(testPredictions, testLabels));
-      }
-
-      updateUI();
-      isLoading(false);
-    };
+    updateUI();
   });
 
   /* Data column */
@@ -142,7 +148,7 @@ function makeGUI() {
 
   const dataThumbnails = d3.selectAll('canvas[data-dataset]');
   dataThumbnails.on('click', function () {
-    const newDataset = datasets[this.dataset.dataset];
+    const newDataset = datasets[(this as HTMLElement).dataset.dataset];
     if (newDataset === state.dataset) {
       return; // No-op.
     }
@@ -160,7 +166,9 @@ function makeGUI() {
 
   const regDataThumbnails = d3.selectAll('canvas[data-regDataset]');
   regDataThumbnails.on('click', function () {
-    const newDataset = regDatasets[this.dataset.regdataset];
+    const newDataset = regDatasets[(this as HTMLCanvasElement)
+      .dataset
+      .regdataset];
     if (newDataset === state.regDataset) {
       return; // No-op.
     }
@@ -178,16 +186,19 @@ function makeGUI() {
 
   d3.select('#file-input')
     .on('input', async function() {
-      const file = this.files[0];
+      const element = this as HTMLInputElement;
+      const file = element.files[0];
+
       if (file.type !== 'application/json') {
-        this.value = '';
+        element.value = '';
         alert('The uploaded file is not a JSON file.');
         return;
       }
+
       try {
         uploadedData = JSON.parse(await file.text());
         if (!isValid(uploadedData)) {
-          this.value = '';
+          element.value = '';
           uploadedData = [];
           throw Error('The uploaded file does not have a valid format');
         }
@@ -211,9 +222,10 @@ function makeGUI() {
   /* Output Column */
   // Configure the max depth of each tree.
   const maxDepth = d3.select('#maxDepth').on('input', function () {
-    state.maxDepth = +this.value;
+    const element = this as HTMLInputElement;
+    state.maxDepth = +element.value;
     d3.select("label[for='maxDepth'] .value")
-      .text(this.value);
+      .text(element.value);
     reset();
   });
   maxDepth.property('value', state.maxDepth);
@@ -222,9 +234,10 @@ function makeGUI() {
 
   // Configure the number of samples to train each tree.
   const percSamples = d3.select('#percSamples').on('input', function () {
-    state.percSamples = +this.value;
+    const element = this as HTMLInputElement;
+    state.percSamples = +element.value;
     d3.select("label[for='percSamples'] .value")
-      .text(this.value);
+      .text(element.value);
     reset();
   });
   percSamples.property('value', state.percSamples);
@@ -232,7 +245,7 @@ function makeGUI() {
     .text(state.percSamples);
 
   const problem = d3.select('#problem').on('change', function () {
-    state.problem = problems[this.value];
+    state.problem = problems[(this as HTMLSelectElement).value];
     generateData();
     drawDatasetThumbnails();
     reset();
@@ -240,7 +253,7 @@ function makeGUI() {
   problem.property('value', getKeyFromValue(problems, state.problem));
 
   const showTestData = d3.select('#show-test-data').on('change', function () {
-    state.showTestData = this.checked;
+    state.showTestData = (this as HTMLInputElement).checked;
     state.serialize();
     mainHeatMap.updateTestPoints(state.showTestData ? testData : []);
   });
@@ -250,9 +263,10 @@ function makeGUI() {
   /* Data configurations */
   // Configure the ratio of training data to test data.
   const percTrain = d3.select('#percTrainData').on('input', function () {
-    state.percTrainData = this.value;
+    const element = this as HTMLInputElement;
+    state.percTrainData = +element.value;
     d3.select("label[for='percTrainData'] .value")
-      .text(this.value);
+      .text(element.value);
     reset();
   });
   percTrain.property('value', state.percTrainData);
@@ -261,9 +275,10 @@ function makeGUI() {
 
   // Configure the level of noise.
   const noise = d3.select('#noise').on('input', function () {
-    state.noise = this.value;
+    const element = this as HTMLInputElement;
+    state.noise = +element.value;
     d3.select("label[for='noise'] .value")
-      .text(this.value);
+      .text(element.value);
     generateData();
     reset();
   });
@@ -278,14 +293,12 @@ function makeGUI() {
 
   /* Color map */
   // Add scale to the gradient color map.
-  const x = d3.scale
-    .linear()
+  const x = d3
+    .scaleLinear()
     .domain([-1, 1])
     .range([0, 144]);
-  const xAxis = d3.svg
-    .axis()
-    .scale(x)
-    .orient('bottom')
+  const xAxis = d3
+    .axisBottom(x)
     .tickValues([-1, 0, 1])
     .tickFormat(d3.format('d'));
   d3.select('#colormap g.core')
@@ -299,12 +312,12 @@ function updateDecisionBoundary(): void {
   let i: number;
   let j: number;
 
-  const xScale = d3.scale
-    .linear()
+  const xScale = d3
+    .scaleLinear()
     .domain([0, DENSITY - 1])
     .range(xDomain);
-  const yScale = d3.scale
-    .linear()
+  const yScale = d3
+    .scaleLinear()
     .domain([DENSITY - 1, 0])
     .range(xDomain);
 
@@ -316,7 +329,7 @@ function updateDecisionBoundary(): void {
       const y = yScale(j);
 
       // Predict each point in the heatmap.
-      const prediction = outputScale(rf.predict([[x, y]]));
+      const prediction = outputScale(dt.predict([[x, y]]));
 
       // Adds predictions to boundaries.
       mainBoundary[i][j] = prediction;
@@ -396,13 +409,7 @@ function updateUI(reset = false) {
  * Reset the app to initial state.
  * @param reset True when called on startup.
  */
-function reset(onStartup = false) {
-  if (!onStartup) {
-    trainWorker.terminate();
-    isLoading(false);
-  }
-
-  trainWorker = new Worker();
+function reset() {
   options = {
     maxSamples: state.percSamples / 100,
     maxDepth: state.maxDepth,
@@ -410,7 +417,7 @@ function reset(onStartup = false) {
   };
 
   Method = isClassification() ? DTClassifier : DTRegressor;
-  rf = null;
+  dt = null;
   d3.select("#start-button .value")
     .text(isClassification() ? 'classify' : 'regress');
 
@@ -425,9 +432,7 @@ function reset(onStartup = false) {
     mainBoundary[i] = new Array(DENSITY);
   }
 
-  data.forEach((d) => {
-    delete d.voteCounts;
-  });
+  uploadedData = uploadedData || [];
   [trainData, testData] = splitTrainTest(data);
 
   state.serialize();
@@ -511,23 +516,6 @@ function updatePoints() {
   mainHeatMap.updateTestPoints(state.showTestData ? testData : []);
 }
 
-/**
- * Shows busy indicators in the UI as something is running in the background.
- * They include making all heatmaps opaque and showing a progress indicator next
- * to the cursor.
- * @param {boolean} loading True if something is running in the background
- */
-function isLoading(loading: boolean) {
-  d3.select('#main-heatmap canvas')
-    .style('opacity', loading ? 0.2 : 1);
-  d3.select('#main-heatmap svg')
-    .style('opacity', loading ? 0.2 : 1);
-  d3.selectAll('.tree-heatmaps-container canvas')
-    .style('opacity', loading ? 0.2 : 1);
-  d3.selectAll('*')
-    .style('cursor', loading ? 'progress' : null);
-}
-
 function isClassification() {
   return state.problem === Problem.CLASSIFICATION;
 }
@@ -535,4 +523,4 @@ function isClassification() {
 drawDatasetThumbnails();
 makeGUI();
 generateData(true);
-reset(true);
+reset();

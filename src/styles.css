@@ -45,7 +45,7 @@ body {
 }
 
 .l--body {
-  width: 550px;
+  width: auto;
   margin-left: auto;
   margin-right: auto;
 }
@@ -551,6 +551,12 @@ article p {
   font-size: 17px;
   line-height: 1.6;
   color: rgba(0, 0, 0, 0.7);
+}
+
+/* Tree Visualization */
+.tree-visualization {
+  display: flex;
+  justify-content: center;
 }
 
 /* Footer */

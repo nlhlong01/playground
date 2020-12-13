@@ -14,12 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-<<<<<<< HEAD:src/Playground2D/state.ts
-/* eslint-disable @typescript-eslint/naming-convention */
-import * as dataset from './dataset';
-=======
 import * as dataset from '../dataset';
->>>>>>> wip:src/RandomForest2D/state.ts
 import 'seedrandom';
 
 /** A map between dataset names and functions generating classification data. */

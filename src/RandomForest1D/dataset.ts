@@ -81,7 +81,7 @@ export type DataGenerator = (
   noise: number
 ) => Point[];
 
-function regressFunc(f) {
+function regressFunc(f: (x: number) => number) {
   return (numSamples: number, noise: number): Point[] => {
     const points: Point[] = [];
     for (let i = 0; i < numSamples; i++) {

@@ -1,6 +1,10 @@
+# Test coverage
 .nyc_output
 coverage/
+
+# Dependency
 dist/
 node_modules/
+
+# Logs
 *.log
-debug/
