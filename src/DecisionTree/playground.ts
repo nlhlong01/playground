@@ -25,9 +25,10 @@ import {
 import { DataGenerator, Example2D, shuffle, isValid } from '../dataset';
 import 'seedrandom';
 import {
-  DecisionTreeClassifier as DTClassifier,
+  // DecisionTreeClassifier as DTClassifier,
   DecisionTreeRegression as DTRegressor
 } from 'ml-cart';
+import { DecisionTreeClassifier as DTClassifier } from '../../../decision-tree-cart/src/DecisionTreeClassifier';
 import '../styles.css';
 import 'material-design-lite';
 import 'material-design-lite/dist/material.indigo-blue.min.css';
@@ -42,6 +43,8 @@ const DENSITY = 50;
 const state = State.deserializeState();
 
 const xDomain: [number, number] = [-6, 6];
+const nodeSize: [number, number] = [120, 120];
+const textBoxSize: [number, number] = [100, 90];
 // Label values must be scaled before and after training since RF impl does not
 // accepts negative values.
 const inputScale = d3
@@ -61,6 +64,12 @@ const mainHeatMap = new HeatMap(
   xDomain,
   d3.select('#main-heatmap'),
   { showAxes: true }
+);
+
+const treeViz = new Tree(
+  nodeSize,
+  textBoxSize,
+  d3.select('.tree-visualization')
 );
 
 const colorScale = d3
@@ -94,32 +103,11 @@ function makeGUI() {
       trainData.map((d) => inputScale(d.label))
     );
 
-    // const model = {
-    //   name: 'a',
-    //   children: [
-    //     {
-    //       name: 'b'
-    //     },
-    //     {
-    //       name: 'c',
-    //       children: [
-    //         {
-    //           name: 'd'
-    //         },
-    //         {
-    //           name: 'e'
-    //         }
-    //       ]
-    //     }
-    //   ]
-    // };
-
-    const tree = new Tree(
-      500,
-      d3.select('.tree-visualization'),
-      JSON.parse(JSON.stringify(dt)).root
-      // model
-    );
+    // const tree = new Tree(
+    //   d3.select('.tree-visualization'),
+    //   JSON.parse(JSON.stringify(dt)).root
+    // );
+    treeViz.draw(JSON.parse(JSON.stringify(dt)).root);
 
     // Final predictions of RF and predictions of decision trees.
     const predictions = dt
@@ -438,6 +426,7 @@ function reset() {
   state.serialize();
   updatePoints();
   updateUI(true);
+  d3.select('.tree-visualization svg').remove();
 }
 
 function drawDatasetThumbnails() {

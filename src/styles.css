@@ -56,6 +56,10 @@ body {
   margin-right: auto;
 }
 
+.l--page.decision-tree {
+  width: 850px;
+}
+
 /* Buttons */
 
 #main-part .mdl-button {
@@ -260,6 +264,10 @@ select:focus {
   margin-bottom: 50px;
   padding-top: 2px;
   position: relative;
+}
+
+#main-part.decision-tree {
+  margin-bottom: 0;
 }
 
 @media (min-height: 700px) {
@@ -557,6 +565,14 @@ article p {
 .tree-visualization {
   display: flex;
   justify-content: center;
+}
+
+g.nodes .text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
 }
 
 /* Footer */
