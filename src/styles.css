@@ -340,11 +340,11 @@ g.column rect {
   dominant-baseline: auto;
 }
 
-#main-heatmap .tick:nth-child(7) text {
+#main-heatmap .tick:nth-child(8) text {
   fill: #333;
 }
 
-#main-heatmap .tick:nth-child(7) line {
+#main-heatmap .tick:nth-child(8) line {
   stroke: #999;
 }
 
