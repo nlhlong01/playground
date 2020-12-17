@@ -15,7 +15,7 @@ module.exports = {
   plugins: [
     new HtmlWebpackPlugin({
       template: './RandomForest2D/index.html',
-      filename: 'rf2d.html',
+      filename: 'index.html',
       inject: false
     }),
     new HtmlWebpackPlugin({
@@ -25,7 +25,7 @@ module.exports = {
     }),
     new HtmlWebpackPlugin({
       template: './DecisionTree/index.html',
-      filename: 'index.html',
+      filename: 'dt.html',
       inject: false
     }),
     new MiniCssExtractPlugin({

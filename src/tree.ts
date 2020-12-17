@@ -13,17 +13,18 @@ export class Tree {
     textBoxSize: [number, number],
     container
   ) {
-    this.container = container;
     this.node = {
       dx: nodeSize[0],
       dy: nodeSize[1],
       width: textBoxSize[0],
       height: textBoxSize[1]
     };
-    this.svg = container.append('svg');
+    this.container = container;
   }
 
   draw(data) {
+    const padding = 100;
+
     this.root = d3.hierarchy(
       data,
       (d) => {
@@ -43,16 +44,19 @@ export class Tree {
     let yMin = Infinity;
     let yMax = -Infinity;
     (this.root as HierarchyPointNode<any>).each(d => {
-      // Get coordinates of extreme nodes.
+      // Get coordinates of extreme points.
       if (d.x > xMax) xMax = d.x;
       if (d.x < xMin) xMin = d.x;
       if (d.y > yMax) yMax = d.y;
       if (d.y < yMin) yMin = d.y;
     });
 
-    this.svg
-      .attr('width', xMax - xMin + 2 * this.node.dx)
-      .attr('height', this.node.dy * (this.root.height + 2));
+    this.container.select('svg').remove();
+
+    this.svg = this.container
+      .append('svg')
+      .attr('width', xMax - xMin + 2 * padding)
+      .attr('height', this.node.dy * this.root.height + 2 * padding);
 
     // Tree group
     const g = this.svg
@@ -60,7 +64,7 @@ export class Tree {
       .attr('font-size', 12)
       .attr(
         'transform',
-        `translate(${-xMin + this.node.dx},${this.node.dy})`
+        `translate(${-xMin + padding},${padding})`
       );
 
     // Link
@@ -69,8 +73,6 @@ export class Tree {
       .classed('links', true)
       .attr('fill', 'none')
       .attr('stroke', '#555')
-      .attr('stroke-opacity', 0.4)
-      .attr('stroke-width', 1.5)
       .selectAll('path')
       .data(this.root.links())
       .join('path')
@@ -98,8 +100,8 @@ export class Tree {
       .join('g')
       .attr('transform', (d) => `translate(${d.x},${d.y})`);
 
-    // Node text
-    nodeGroup
+    // Text box
+    const textBox = nodeGroup
       .append('foreignObject')
       .attr('x', -this.node.width / 2)
       .attr('y', -this.node.height / 2)
@@ -108,39 +110,40 @@ export class Tree {
       .style('border', 'thin solid')
       .append('xhtml')
       .append('div')
+      .classed('text', true)
       .style('background-color', (d) => {
         const colorScale = d3
           .scaleLinear()
           .domain([0, 1])
           .range([1, -1]);
         return color(colorScale(d.data.distribution[0][0]));
-      })
-      .classed('text', true)
-      .style('text-align', 'center')
-      .each(function(d) {
-        const { gain, splitColumn, splitValue, samples, distribution } = d.data;
-        const text = d3.select(this);
-
-        text
-          .append('b')
-          .html(`gain = ${gain ? gain.toFixed(3) : 0}`);
-
-        if (splitColumn !== undefined) {
-          const feature = splitColumn === 0 ? 'x' : 'y';
-          text
-            .append('b')
-            .html(`${feature} < ${splitValue.toFixed(3)}`);
-        }
-
-        text
-          .append('b')
-          .html(`samples = ${samples}`);
-
-        const x = Math.round((distribution[0][0] || 0) * samples);
-        const y = samples - x;
-        text
-          .append('b')
-          .html(`dist = [${x}, ${y}]`);
       });
+
+    // Text content
+    textBox.each(function(d) {
+      const { gain, splitColumn, splitValue, samples, distribution } = d.data;
+      const text = d3.select(this);
+
+      if (splitColumn !== undefined) {
+        const feature = splitColumn === 0 ? 'x' : 'y';
+        text
+          .append('div')
+          .html(`${feature} < ${splitValue.toFixed(3)}`);
+      }
+
+      text
+        .append('div')
+        .html(`gain = ${gain ? gain.toFixed(3) : 0}`);
+
+      text
+        .append('div')
+        .html(`samples = ${samples}`);
+
+      const x = Math.round((distribution[0][0] || 0) * samples);
+      const y = samples - x;
+      text
+        .append('div')
+        .html(`dist = [${x}, ${y}]`);
+    });
   }
 }

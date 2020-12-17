@@ -69,7 +69,7 @@ const mainHeatMap = new HeatMap(
 const treeViz = new Tree(
   nodeSize,
   textBoxSize,
-  d3.select('.tree-visualization')
+  d3.select('.tree-viz')
 );
 
 const colorScale = d3
@@ -104,7 +104,7 @@ function makeGUI() {
     );
 
     // const tree = new Tree(
-    //   d3.select('.tree-visualization'),
+    //   d3.select('.tree-viz'),
     //   JSON.parse(JSON.stringify(dt)).root
     // );
     treeViz.draw(JSON.parse(JSON.stringify(dt)).root);
@@ -426,7 +426,7 @@ function reset() {
   state.serialize();
   updatePoints();
   updateUI(true);
-  d3.select('.tree-visualization svg').remove();
+  d3.select('.tree-viz svg').remove();
 }
 
 function drawDatasetThumbnails() {

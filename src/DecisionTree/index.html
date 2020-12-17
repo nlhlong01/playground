@@ -1,5 +1,6 @@
 <!doctype html>
 <!-- Copyright 2016 Google Inc. All Rights Reserved.
+Modifications Copyright 2020 Long Nguyen.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -82,7 +83,7 @@ limitations under the License.
           <div class="ui-noise">
             <label for="noise">Noise:&nbsp;&nbsp;<span class="value">XX</span></label>
             <p class="slider">
-              <input class="mdl-slider mdl-js-slider" type="range" id="noise" min="0" max="50" step="5">
+              <input class="mdl-slider mdl-js-slider" type="range" id="noise" min="0" max="15" step="1">
             </p>
           </div>
           <button class="basic-button" id="data-regen-button" title="Regenerate data">
@@ -170,10 +171,10 @@ limitations under the License.
       </div>
 
       <div class="ui-maxDepth">
-        <label for="maxDepth">Tree depth:&nbsp;&nbsp;<span class="value">XX</span></label>
+        <label for="maxDepth">Max depth:&nbsp;&nbsp;<span class="value">XX</span></label>
         <p class="slider">
           <input id="maxDepth" class="mdl-slider mdl-js-slider" type="range"
-          min="1" max="10" step="1">
+          min="1" max="5" step="1">
         </p>
       </div>
 
@@ -198,7 +199,7 @@ limitations under the License.
   </div>
 
   <div class="l--body">
-    <div class="tree-visualization"></div>
+    <div class="tree-viz"></div>
   </div>
 
   <script src="DecisionTree.bundle.js"></script>
