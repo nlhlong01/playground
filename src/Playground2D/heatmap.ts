@@ -140,7 +140,7 @@ export class HeatMap {
       this.svg
         .append('g')
         .attr('class', 'y axis')
-        .attr('transform', 'translate(' + (width - 2 * padding) + ',0)')
+        .attr('transform', `translate(${width - 2 * padding},0)`)
         .call(yAxis);
     }
   }
@@ -206,13 +206,17 @@ export class HeatMap {
     const xDomain = this.xScale.domain();
     const yDomain = this.yScale.domain();
     points = points.filter(
-      (p) =>
+      (p) => (
         p.x >= xDomain[0] &&
         p.x <= xDomain[1] &&
         p.y >= yDomain[0] &&
         p.y <= yDomain[1]
+      )
     );
 
+    container.selectAll('circle').remove();
+
+    const hoverCard = d3.select('#hovercard');
     // Attach data to initially empty selection.
     const selection = container.selectAll('circle').data(points);
 
@@ -220,28 +224,20 @@ export class HeatMap {
     selection
       .enter()
       .append('circle')
-      .attr('r', 3);
-
-    // Update points to be in the correct position.
-    selection
+      .attr('r', 3)
+      // Update points to be in the correct position.
       .attr('cx', (d: Example2D) => this.xScale(d.x))
       .attr('cy', (d: Example2D) => this.yScale(d.y))
-      .style('fill', (d) => this.color(d.label));
-
-    // Remove points if the length has gone down.
-    selection.exit().remove();
-
-    // Update hover cards.
-    const hoverCard = d3.select('#hovercard');
-    selection
-      .on('mouseenter', (d: Example2D) => {
+      .style('fill', (d) => this.color(d.label))
+      // Update hover cards.
+      .on('mouseenter', (event: Event, d: Example2D) => {
         if (d.voteCounts === undefined) return;
         if (d.voteCounts.length !== 2) throw new Error(
           'Vote counts are not valid'
         );
 
         const container = d3.select('#main-heatmap canvas');
-        const coordinates = d3.pointer(container.node());
+        const coordinates = d3.pointer(event, container.node());
 
         hoverCard
           .style('left', `${coordinates[0] + 20}px`)
@@ -256,5 +252,8 @@ export class HeatMap {
       .on('mouseleave', () => {
         hoverCard.style('display', 'none');
       });
+
+    // Remove points if the length has gone down.
+    selection.exit().remove();
   }
 } // Close class HeatMap.

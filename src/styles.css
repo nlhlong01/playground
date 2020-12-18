@@ -326,25 +326,25 @@ g.column rect {
   stroke: none;
 }
 
-#main-heatmap {
+.main-viz {
   position: relative;
   margin: 10px 0;
 }
 
-#main-heatmap .tick line {
+.main-viz .tick line {
   stroke: #ddd;
 }
 
-#main-heatmap .tick text {
+.main-viz .tick text {
   fill: #bbb;
   dominant-baseline: auto;
 }
 
-#main-heatmap .tick:nth-child(7) text {
+.main-viz .tick:nth-child(8) text {
   fill: #333;
 }
 
-#main-heatmap .tick:nth-child(7) line {
+.main-viz .tick:nth-child(8) line {
   stroke: #999;
 }
 

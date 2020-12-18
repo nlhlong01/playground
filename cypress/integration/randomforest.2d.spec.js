@@ -74,8 +74,15 @@ describe('1-dimensional Random Forest E2E Tests', () => {
 
     it('should draw a tree result when a tree heat map is hovered', () => {
       // TODO: Add assertions for plot.
-      cy.get('#tree-heatmap-0').trigger('mouseover');
+      cy.get('#tree-heatmap-0').trigger('mouseenter');
       cy.get('#tree-heatmap-0').trigger('mouseleave');
+    });
+
+    it('should display a card when hovering ', () => {
+      // TODO: Add assertions for plot.
+      cy.get('#main-heatmap g.train circle')
+        .first()
+        .trigger('mouseenter', { force: true });
     });
 
     it('shoud upload json data file', () => {
