@@ -85,7 +85,7 @@ export class LineChart {
       this.svg
         .append('g')
         .attr('class', 'y axis')
-        .attr('transform', 'translate(' + (width - 2 * padding) + ',0)')
+        .attr('transform', `translate(${width - 2 * padding},0)`)
         .call(yAxis);
     }
   }
