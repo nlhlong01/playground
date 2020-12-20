@@ -65,7 +65,7 @@
     "d3-hierarchy": "^2.0.0",
     "jsonschema": "^1.4.0",
     "material-design-lite": "^1.3.0",
-    "ml-cart": "^2.0.2",
+    "ml-cart": "git+https://github.com/nlhlong01/decision-tree-cart.git",
     "ml-random-forest": "git+https://github.com/nlhlong01/random-forest.git",
     "seedrandom": "^2.4.3"
   }

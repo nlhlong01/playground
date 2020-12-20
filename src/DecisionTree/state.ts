@@ -20,9 +20,7 @@ import 'seedrandom';
 /** A map between dataset names and functions generating classification data. */
 export const datasets: { [key: string]: dataset.DataGenerator } = {
   circle: dataset.classifyCircleData,
-  xor: dataset.classifyXORData,
-  gauss: dataset.classifyTwoGaussData,
-  spiral: dataset.classifySpiralData
+  gauss: dataset.classifyTwoGaussData
 };
 
 /** A map between dataset names and functions that generate regression data. */

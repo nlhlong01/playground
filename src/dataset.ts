@@ -164,7 +164,7 @@ Example2D[] {
 export function classifyXORData(numSamples: number, noise: number):
 Example2D[] {
   const points: Example2D[] = [];
-  const padding = 0.1;
+  const padding = 0.3;
   const radius = 5;
   function getXORLabel(p: Point) {
     return p.x * p.y >= 0 ? 1 : -1;

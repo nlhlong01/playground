@@ -24,11 +24,14 @@ import {
 } from './state';
 import { DataGenerator, Example2D, shuffle, isValid } from '../dataset';
 import 'seedrandom';
+// import {
+//   DecisionTreeClassifier as DTClassifier,
+//   DecisionTreeRegression as DTRegressor
+// } from '../../node_modules/ml-cart/src/index';
 import {
-  // DecisionTreeClassifier as DTClassifier,
+  DecisionTreeClassifier as DTClassifier,
   DecisionTreeRegression as DTRegressor
-} from 'ml-cart';
-import { DecisionTreeClassifier as DTClassifier } from '../../../decision-tree-cart/src/DecisionTreeClassifier';
+} from '../../../decision-tree-cart/src/index';
 import '../styles.css';
 import 'material-design-lite';
 import 'material-design-lite/dist/material.indigo-blue.min.css';
@@ -102,11 +105,6 @@ function makeGUI() {
       trainData.map((d) => [d.x, d.y]),
       trainData.map((d) => inputScale(d.label))
     );
-
-    // const tree = new Tree(
-    //   d3.select('.tree-viz'),
-    //   JSON.parse(JSON.stringify(dt)).root
-    // );
     treeViz.draw(JSON.parse(JSON.stringify(dt)).root);
 
     // Final predictions of RF and predictions of decision trees.

@@ -23,6 +23,7 @@ export class Tree {
   }
 
   draw(data) {
+    console.log(data);
     const padding = 100;
 
     this.root = d3.hierarchy(
@@ -108,42 +109,60 @@ export class Tree {
       .attr('width', this.node.width)
       .attr('height', this.node.height)
       .style('border', 'thin solid')
+      .style('border-radius', '15px')
       .append('xhtml')
       .append('div')
       .classed('text', true)
       .style('background-color', (d) => {
+        const { kind, distribution } = d.data;
         const colorScale = d3
           .scaleLinear()
           .domain([0, 1])
-          .range([1, -1]);
-        return color(colorScale(d.data.distribution[0][0]));
+          .range([-1, 1]);
+        return kind === 'classifier' ?
+          color(-colorScale(distribution[0][0]))
+          : color(colorScale(distribution));
       });
 
     // Text content
     textBox.each(function(d) {
-      const { gain, splitColumn, splitValue, samples, distribution } = d.data;
+      const {
+        kind,
+        giniImpurity,
+        splitColumn,
+        splitValue,
+        samples,
+        distribution
+      } = d.data;
       const text = d3.select(this);
 
       if (splitColumn !== undefined) {
         const feature = splitColumn === 0 ? 'x' : 'y';
         text
           .append('div')
-          .html(`${feature} < ${splitValue.toFixed(3)}`);
+          .html(`${feature} <= ${splitValue.toFixed(3)}`);
       }
 
       text
         .append('div')
-        .html(`gain = ${gain ? gain.toFixed(3) : 0}`);
+        .html(`gini = ${giniImpurity.toFixed(3)}`);
 
       text
         .append('div')
         .html(`samples = ${samples}`);
 
-      const x = Math.round((distribution[0][0] || 0) * samples);
-      const y = samples - x;
-      text
-        .append('div')
-        .html(`dist = [${x}, ${y}]`);
+      if (kind === 'classifier') {
+        const x = Math.round((distribution[0][0] || 0) * samples);
+        const y = samples - x;
+        text
+          .append('div')
+          .html(`dist = [${x}, ${y}]`);
+      } else {
+        const x = Math.round((distribution || 0) * samples);
+        text
+          .append('div')
+          .html(`dist = ${x}`);
+      }
     });
   }
 }

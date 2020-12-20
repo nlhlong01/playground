@@ -56,14 +56,8 @@ limitations under the License.
             <div class="dataset" title="Circle">
               <canvas class="data-thumbnail" data-dataset="circle"></canvas>
             </div>
-            <div class="dataset" title="Exclusive OR">
-              <canvas class="data-thumbnail" data-dataset="xor"></canvas>
-            </div>
             <div class="dataset" title="Gaussian">
               <canvas class="data-thumbnail" data-dataset="gauss"></canvas>
-            </div>
-            <div class="dataset" title="Spiral">
-              <canvas class="data-thumbnail" data-dataset="spiral"></canvas>
             </div>
             <div class="dataset" title="Plane">
               <canvas class="data-thumbnail" data-regDataset="reg-plane"></canvas>
@@ -83,7 +77,7 @@ limitations under the License.
           <div class="ui-noise">
             <label for="noise">Noise:&nbsp;&nbsp;<span class="value">XX</span></label>
             <p class="slider">
-              <input class="mdl-slider mdl-js-slider" type="range" id="noise" min="0" max="15" step="1">
+              <input class="mdl-slider mdl-js-slider" type="range" id="noise" min="0" max="30" step="5">
             </p>
           </div>
           <button class="basic-button" id="data-regen-button" title="Regenerate data">
@@ -110,7 +104,7 @@ limitations under the License.
     <div class="dt main-column">
       <h4><span>Output</span></h4>
 
-      <div id="main-heatmap">
+      <div id="main-heatmap" class="main-viz">
       </div>
 
       <div class="color-scale">
@@ -165,7 +159,7 @@ limitations under the License.
         <p class="select">
           <select id="problem">
             <option value="classification">Classification</option>
-            <option value="regression">Regression</option>
+            <!-- <option value="regression">Regression</option> -->
           </select>
         </p>
       </div>
