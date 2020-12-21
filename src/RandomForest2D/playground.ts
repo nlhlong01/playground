@@ -16,6 +16,15 @@ limitations under the License.
 
 /* eslint-disable @typescript-eslint/naming-convention */
 import * as d3 from 'd3';
+import {
+  RandomForestClassifier as RFClassifier,
+  RandomForestRegression as RFRegressor
+} from 'ml-random-forest';
+import 'seedrandom';
+import 'material-design-lite';
+import 'material-design-lite/dist/material.indigo-blue.min.css';
+import '../styles.css';
+import Worker from 'worker-loader!./train.worker';
 import { HeatMap } from '../heatmap';
 import {
   State,
@@ -26,15 +35,13 @@ import {
   Problem
 } from './state';
 import { DataGenerator, Example2D, shuffle, isValid } from '../dataset';
-import 'seedrandom';
-import {
-  RandomForestClassifier as RFClassifier,
-  RandomForestRegression as RFRegressor
-} from 'ml-random-forest';
-import '../styles.css';
-import 'material-design-lite';
-import 'material-design-lite/dist/material.indigo-blue.min.css';
-import Worker from 'worker-loader!./train.worker';
+
+type Metrics = {
+  loss: number;
+  accuracy: number;
+  precision: number;
+  recall: number;
+};
 
 const NUM_SAMPLES_CLASSIFY = 400;
 const NUM_SAMPLES_REGRESS = 800;
@@ -45,7 +52,6 @@ const DENSITY = 50;
 const NUM_VISIBLE_TREES = 16;
 
 const state = State.deserializeState();
-
 const xDomain: [number, number] = [-6, 6];
 // Label values must be scaled before and after training since RF impl does not
 // accepts negative values.
@@ -57,7 +63,6 @@ const outputScale = d3
   .scaleLinear()
   .domain([0, 1])
   .range([-1, 1]);
-
 // Plot the main heatmap.
 const mainHeatMap = new HeatMap(
   SIDE_LENGTH,
@@ -67,7 +72,6 @@ const mainHeatMap = new HeatMap(
   d3.select('#main-heatmap'),
   { showAxes: true }
 );
-
 // Plot the tree heatmaps.
 const treeHeatMaps: HeatMap[] = new Array(NUM_VISIBLE_TREES);
 for (let i = 0; i < NUM_VISIBLE_TREES; i++) {
@@ -85,12 +89,12 @@ for (let i = 0; i < NUM_VISIBLE_TREES; i++) {
     { noSvg: true },
   );
 }
-
 const colorScale = d3
   .scaleLinear<string, number>()
   .domain([-1, 0, 1])
   .range(['#f59322', '#e8eaeb', '#0877bd'])
   .clamp(true);
+const clfMetricList = ['loss', 'accuracy', 'precision', 'recall'];
 
 let trainWorker: Worker;
 let options;
@@ -100,11 +104,8 @@ let data: Example2D[];
 let uploadedData: Example2D[];
 let trainData: Example2D[];
 let testData: Example2D[];
-let lossTrain: number;
-let lossTest: number;
-let accuracy: number;
-let precision: number;
-let recall: number;
+let trainMetrics: Metrics;
+let testMetrics: Metrics;
 let mainBoundary: number[][];
 let treeBoundaries: number[][][];
 
@@ -159,9 +160,8 @@ function makeGUI() {
         const labels = data.map((d) => d.label);
         const [trainLabels, testLabels] = splitTrainTest(labels);
 
-        lossTrain = getLoss(trainPredictions, trainLabels);
-        lossTest = getLoss(testPredictions, testLabels);
-        ({ accuracy, precision, recall } = score(testPredictions, testLabels));
+        trainMetrics = getClfMetrics(trainPredictions, trainLabels);
+        testMetrics = getClfMetrics(testPredictions, testLabels);
       }
 
       updateUI();
@@ -257,6 +257,19 @@ function makeGUI() {
       .on('mouseleave', () => {
         mainHeatMap.updateBackground(mainBoundary, state.discretize);
       });
+  }
+
+  // Metrics table
+  if (isClassification()) {
+    clfMetricList.forEach((metric) => {
+      const metricName = metric[0].toLocaleUpperCase() + metric.slice(1);
+      const row = d3.select('.metrics table tbody').append('tr');
+      row.append('td')
+        .attr('class', 'mdl-data-table__cell--non-numeric')
+        .text(metricName);
+      row.append('td').attr('id', `train${metricName}`);
+      row.append('td').attr('id', `test${metricName}`);
+    });
   }
 
   /* Output Column */
@@ -440,10 +453,8 @@ function getLoss(predClass: number[], trueClass: number[]): number {
  * @param predClass Correct target value.
  * @param trueClass Estimated target value.
  */
-function score(predClass: number[], trueClass: number[]) {
-  if (predClass.length !== trueClass.length) {
-    throw Error('Length of predictions must equal length of labels');
-  }
+function getClfMetrics(predClass: number[], trueClass: number[]) {
+  const loss = getLoss(predClass, trueClass);
 
   // 4 elements of a confusion matrix.
   let tp = 0;
@@ -463,6 +474,7 @@ function score(predClass: number[], trueClass: number[]) {
   }
 
   return {
+    loss: loss,
     accuracy: (tp + tn) / (tp + tn + fp + fn),
     precision: tp / (tp + fp),
     recall: tp / (tp + fn)
@@ -480,14 +492,15 @@ function updateUI(reset = false) {
     treeHeatMaps[i].updateBackground(treeBoundaries[i], state.discretize);
   }
 
-  const updateMetric = (selector: string, value: number): void => {
-    d3.select(selector).text(value.toFixed(3));
-  };
-  updateMetric('#loss-train', lossTrain);
-  updateMetric('#loss-test', lossTest);
-  updateMetric('#accuracy', accuracy);
-  updateMetric('#precision', precision);
-  updateMetric('#recall', recall);
+  if (isClassification()) {
+    clfMetricList.forEach((metric) => {
+      const metricName = metric[0].toLocaleUpperCase() + metric.slice(1);
+      d3.select(`.metrics td#train${metricName}`)
+        .text(trainMetrics[metric].toFixed(3));
+      d3.select(`.metrics td#test${metricName}`)
+        .text(testMetrics[metric].toFixed(3));
+    });
+  }
 }
 
 /**
@@ -516,11 +529,8 @@ function reset(onStartup = false) {
   d3.select("#start-button .value")
     .text(isClassification() ? 'classify' : 'regress');
 
-  lossTest = 0;
-  lossTrain = 0;
-  accuracy = 0;
-  precision = 0;
-  recall = 0;
+  trainMetrics = { loss: 0, accuracy: 0, precision: 0, recall: 0 };
+  testMetrics = { loss: 0, accuracy: 0, precision: 0, recall: 0 };
 
   mainBoundary = new Array(DENSITY);
   treeBoundaries = new Array(NUM_VISIBLE_TREES);

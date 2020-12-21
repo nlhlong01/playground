@@ -151,7 +151,7 @@ limitations under the License.
       </div>
 
       <div class="metrics">
-        <div class="score">
+        <!-- <div class="score">
           <div class="output-stats">
             <span>Test loss:&nbsp;&nbsp;</span><span class="value" id="loss-test"></span>
           </div>
@@ -169,7 +169,17 @@ limitations under the License.
           <div class="output-stats">
             <span>Recall:</span>&nbsp;&nbsp;<span class="value" id="recall"></span>
           </div>
-        </div>
+        </div> -->
+        <table class="mdl-data-table mdl-js-data-table">
+          <thead>
+            <tr>
+              <th class="mdl-data-table__cell--non-numeric">Metrics</th>
+              <th>Train</th>
+              <th>Test</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
     </div>
 
