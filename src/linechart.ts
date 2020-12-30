@@ -98,7 +98,7 @@ export class LineChart {
   }
 
   updatePlot(points: Point[]) {
-    this.svg.select('path').remove();
+    this.svg.select('path.plot').remove();
 
     // Keep only line segments that are inside the bounds.
     const xDomain = this.xScale.domain();

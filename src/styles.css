@@ -45,7 +45,7 @@ body {
 }
 
 .l--body {
-  width: auto;
+  width: 550px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -61,7 +61,6 @@ body {
 }
 
 /* Buttons */
-
 #main-part .mdl-button {
   background-color: rgba(158, 158, 158, 0.1);
   width: 28px;
@@ -251,7 +250,7 @@ select:focus {
   top: -20px;
 }
 
-/* Main Part*/
+/* Main Part */
 #main-part {
   display: -webkit-box;
   display: -moz-box;
@@ -475,10 +474,6 @@ g.column rect {
   color: #777;
 }
 
-#loss-test {
-  color: black;
-}
-
 g.train circle {
   stroke: white;
   stroke-width: 1;
@@ -513,15 +508,6 @@ g.point circle {
 
 .axis path {
   display: none;
-}
-
-@-webkit-keyframes flowing {
-  from {
-    stroke-dashoffset: 0;
-  }
-  to {
-    stroke-dashoffset: -10;
-  }
 }
 
 /* Article */
@@ -559,6 +545,8 @@ article p {
 
 /* Tree Visualization */
 .tree-viz {
+  background: white;
+  box-shadow: 0 0px 4px rgba(0, 0, 0, 0.1);
   display: flex;
   justify-content: center;
 }

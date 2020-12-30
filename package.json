@@ -60,10 +60,11 @@
     "worker-loader": "^3.0.5"
   },
   "dependencies": {
+    "custom-ml-cart": "github:nlhlong01/decision-tree-cart",
     "d3": "^6.3.0",
     "jsonschema": "^1.4.0",
     "material-design-lite": "^1.3.0",
-    "ml-random-forest": "git+https://github.com/nlhlong01/random-forest.git",
+    "ml-random-forest": "github:nlhlong01/random-forest",
     "seedrandom": "^2.4.3"
   }
 }

@@ -27,7 +27,7 @@ export type Example2D = {
   voteCounts?: number[];
 };
 
-type Point = {
+export type Point = {
   x: number;
   y: number;
 };

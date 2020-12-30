@@ -35,13 +35,7 @@ import {
   Problem
 } from './state';
 import { DataGenerator, Example2D, shuffle, isValid } from '../dataset';
-
-type Metrics = {
-  loss: number;
-  accuracy: number;
-  precision: number;
-  recall: number;
-};
+import * as Utils from '../utils';
 
 const NUM_SAMPLES_CLASSIFY = 400;
 const NUM_SAMPLES_REGRESS = 800;
@@ -94,7 +88,6 @@ const colorScale = d3
   .domain([-1, 0, 1])
   .range(['#f59322', '#e8eaeb', '#0877bd'])
   .clamp(true);
-const clfMetricList = ['loss', 'accuracy', 'precision', 'recall'];
 
 let trainWorker: Worker;
 let options;
@@ -104,8 +97,10 @@ let data: Example2D[];
 let uploadedData: Example2D[];
 let trainData: Example2D[];
 let testData: Example2D[];
-let trainMetrics: Metrics;
-let testMetrics: Metrics;
+let metricList = [];
+let getMetrics: (yPred: number[], yTrue: number[]) => any;
+let trainMetrics;
+let testMetrics;
 let mainBoundary: number[][];
 let treeBoundaries: number[][][];
 
@@ -154,15 +149,13 @@ function makeGUI() {
         predictions[i] = rf.selection(treePredictions[i]);
       }
 
-      if (isClassification()) {
-        [trainData, testData] = splitTrainTest(data);
-        const [trainPredictions, testPredictions] = splitTrainTest(predictions);
-        const labels = data.map((d) => d.label);
-        const [trainLabels, testLabels] = splitTrainTest(labels);
+      [trainData, testData] = splitTrainTest(data);
+      const [trainPredictions, testPredictions] = splitTrainTest(predictions);
+      const labels = data.map((d) => d.label);
+      const [trainLabels, testLabels] = splitTrainTest(labels);
 
-        trainMetrics = getClfMetrics(trainPredictions, trainLabels);
-        testMetrics = getClfMetrics(testPredictions, testLabels);
-      }
+      trainMetrics = getMetrics(trainPredictions, trainLabels);
+      testMetrics = getMetrics(testPredictions, testLabels);
 
       updateUI();
       isLoading(false);
@@ -257,19 +250,6 @@ function makeGUI() {
       .on('mouseleave', () => {
         mainHeatMap.updateBackground(mainBoundary, state.discretize);
       });
-  }
-
-  // Metrics table
-  if (isClassification()) {
-    clfMetricList.forEach((metric) => {
-      const metricName = metric[0].toLocaleUpperCase() + metric.slice(1);
-      const row = d3.select('.metrics table tbody').append('tr');
-      row.append('td')
-        .attr('class', 'mdl-data-table__cell--non-numeric')
-        .text(metricName);
-      row.append('td').attr('id', `train${metricName}`);
-      row.append('td').attr('id', `test${metricName}`);
-    });
   }
 
   /* Output Column */
@@ -433,55 +413,6 @@ function updateDecisionBoundary(): void {
 }
 
 /**
- * Computes the average mean square error of the predicted values.
- * @param predClass Correct target value.
- * @param trueClass Estimated target value.
- */
-function getLoss(predClass: number[], trueClass: number[]): number {
-  if (predClass.length !== trueClass.length) {
-    throw Error('Length of predictions must equal length of labels');
-  }
-  let loss = 0;
-  for (let i = 0; i < predClass.length; i++) {
-    loss += 0.5 * Math.pow(predClass[i] - trueClass[i], 2);
-  }
-  return loss / predClass.length;
-}
-
-/**
- * Compute classification metrics.
- * @param predClass Correct target value.
- * @param trueClass Estimated target value.
- */
-function getClfMetrics(predClass: number[], trueClass: number[]) {
-  const loss = getLoss(predClass, trueClass);
-
-  // 4 elements of a confusion matrix.
-  let tp = 0;
-  let tn = 0;
-  let fp = 0;
-  let fn = 0;
-
-  for (let i = 0; i < predClass.length; i++) {
-    const pred = predClass[i];
-    const label = trueClass[i];
-
-    if (pred === -1 && label === -1) tn++;
-    else if (pred === -1 && label === 1) fn++;
-    else if (pred === 1 && label === -1) fp++;
-    else if (pred === 1 && label === 1) tp++;
-    else throw Error('Predicted or true class value is invalid');
-  }
-
-  return {
-    loss: loss,
-    accuracy: (tp + tn) / (tp + tn + fp + fn),
-    precision: tp / (tp + fp),
-    recall: tp / (tp + fn)
-  };
-}
-
-/**
  * Update all heat maps and metrics.
  * @param reset True when called in reset()
  */
@@ -492,15 +423,20 @@ function updateUI(reset = false) {
     treeHeatMaps[i].updateBackground(treeBoundaries[i], state.discretize);
   }
 
-  if (isClassification()) {
-    clfMetricList.forEach((metric) => {
-      const metricName = metric[0].toLocaleUpperCase() + metric.slice(1);
-      d3.select(`.metrics td#train${metricName}`)
-        .text(trainMetrics[metric].toFixed(3));
-      d3.select(`.metrics td#test${metricName}`)
-        .text(testMetrics[metric].toFixed(3));
-    });
-  }
+  // Metrics table
+  d3.selectAll('.metrics tbody tr').remove();
+  metricList.forEach((metric) => {
+    const row = d3.select('.metrics tbody').append('tr');
+    // First row contains metric name
+    row.append('td')
+      .attr('class', 'mdl-data-table__cell--non-numeric')
+      .text(metric[0].toLocaleUpperCase() + metric.slice(1));
+    // Next 2 rows contain train and test metric values
+    row.append('td')
+      .text(trainMetrics ? trainMetrics[metric].toFixed(3) : '0.000');
+    row.append('td')
+      .text(testMetrics ? testMetrics[metric].toFixed(3) : '0.000');
+  });
 }
 
 /**
@@ -524,13 +460,22 @@ function reset(onStartup = false) {
     replacement: false
   };
 
-  Method = isClassification() ? RFClassifier : RFRegressor;
+  if (isClassification()) {
+    Method = RFClassifier;
+    metricList = ['Accuracy', 'Precision', 'Recall'];
+    getMetrics = Utils.getClfMetrics;
+  } else {
+    Method = RFRegressor;
+    metricList = ['R2 Score'];
+    getMetrics = Utils.getRegrMetrics;
+  }
+
+  trainMetrics = null;
+  testMetrics = null;
+
   rf = null;
   d3.select("#start-button .value")
     .text(isClassification() ? 'classify' : 'regress');
-
-  trainMetrics = { loss: 0, accuracy: 0, precision: 0, recall: 0 };
-  testMetrics = { loss: 0, accuracy: 0, precision: 0, recall: 0 };
 
   mainBoundary = new Array(DENSITY);
   treeBoundaries = new Array(NUM_VISIBLE_TREES);

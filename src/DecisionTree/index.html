@@ -41,7 +41,7 @@ limitations under the License.
   </a>
   <!-- Header -->
   <header>
-    <h1 class="l--page">Tinker With a <b>decision tree</b>.</h1>
+    <h1 class="l--page">Tinker With a <b>Decision Tree</b>.</h1>
   </header>
 
   <!-- Main Part -->
@@ -85,20 +85,6 @@ limitations under the License.
           </button>
         </div>
       </div>
-
-      <!-- <hr> -->
-
-      <!-- <div class="upload-data">
-        <p>Upload your own dataset</p>
-        <label for="file-input" class="basic-button" style="width: auto; text-align: center;">
-          Choose file
-        </label>
-        <input type="file" id="file-input" accept=".json" style="display: none; width: 100%;">
-        <p id='file-name'>No file chosen</p>
-        <button class="basic-button" id="file-select">
-          Use dataset
-        </button>
-      </div> -->
     </div>
 
     <div class="dt main-column">
@@ -129,25 +115,16 @@ limitations under the License.
       </div>
 
       <div class="metrics">
-        <div class="score">
-          <div class="output-stats">
-            <span>Test loss:&nbsp;&nbsp;</span><span class="value" id="loss-test"></span>
-          </div>
-          <div class="output-stats">
-            <span>Training loss:</span>&nbsp;&nbsp;<span class="value" id="loss-train"></span>
-          </div>
-        </div>
-        <div class="confusion-matrix">
-          <div class="output-stats">
-            <span>Accuracy:</span>&nbsp;&nbsp;<span class="value" id="accuracy"></span>
-          </div>
-          <div class="output-stats">
-            <span>Precision:</span>&nbsp;&nbsp;<span class="value" id="precision"></span>
-          </div>
-          <div class="output-stats">
-            <span>Recall:</span>&nbsp;&nbsp;<span class="value" id="recall"></span>
-          </div>
-        </div>
+        <table class="mdl-data-table mdl-js-data-table">
+          <thead>
+            <tr>
+              <th class="mdl-data-table__cell--non-numeric">Metrics</th>
+              <th>Train</th>
+              <th>Test</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
     </div>
 
@@ -192,9 +169,7 @@ limitations under the License.
     </div>
   </div>
 
-  <div class="l--body">
-    <div class="tree-viz"></div>
-  </div>
+  <div class="tree-viz"></div>
 
   <script src="DecisionTree.bundle.js"></script>
 </body>

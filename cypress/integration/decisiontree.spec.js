@@ -13,8 +13,6 @@ describe('Decision Tree E2E Tests', () => {
 
   describe('UI interaction', () => {
     it('should change the data type and generate a new data set', () => {
-      cy.get('canvas[data-dataset="xor"]').click();
-      cy.get('canvas[data-dataset="spiral"]').click();
       cy.get('canvas[data-dataset="gauss"]').click();
 
       cy.get('input#noise')

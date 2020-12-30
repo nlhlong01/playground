@@ -20,12 +20,12 @@ import 'seedrandom';
 
 /** A map between dataset names and functions that generate regression data. */
 export const datasets: { [key: string]: dataset.DataGenerator } = {
-  'linear': dataset.regressLinear,
-  'quadr': dataset.regressQuadr,
-  'quadrShift': dataset.regressQuadrShift,
-  'sine': dataset.regressSine,
-  'sigmoid': dataset.regressSigmoid,
-  'step': dataset.regressStep
+  linear: dataset.regressLinear,
+  quadr: dataset.regressQuadr,
+  quadrShift: dataset.regressQuadrShift,
+  sine: dataset.regressSine,
+  sigmoid: dataset.regressSigmoid,
+  step: dataset.regressStep
 };
 
 export function getKeyFromValue(obj: any, value: any): string {
