@@ -81,7 +81,16 @@ export type DataGenerator = (
   noise: number
 ) => Point[];
 
-function regressFunc(f) {
+export const baseFunctions: { [key: string]: (x: number) => number } = {
+  linear: (x) => x,
+  quadr: (x) => (6 / 40) * x ** 2 - 3,
+  quadrShift: (x) => (3 / 40) * x ** 2 - x / 2 - 1,
+  sine: (x) => 2 * Math.sin(x),
+  sigmoid: (x) => 5 - 5 * (1 + Math.tanh(x)),
+  step: (x) => x > 2 ? 3 : -3
+};
+
+function getRegressFunc(f: (x: number) => number) {
   return (numSamples: number, noise: number): Point[] => {
     const points: Point[] = [];
     for (let i = 0; i < numSamples; i++) {
@@ -101,14 +110,12 @@ function regressFunc(f) {
   };
 }
 
-export const regressLinear = regressFunc((x) => x);
-export const regressQuadr = regressFunc((x) => (6 / 40) * x ** 2 - 3);
-export const regressQuadrShift = regressFunc(
-  (x) => (3 / 40) * x ** 2 - x / 2 - 1
-);
-export const regressSine = regressFunc((x) => 2 * Math.sin(x));
-export const regressSigmoid = regressFunc((x) => 5 - 5 * (1 + Math.tanh(x)));
-export const regressStep = regressFunc((x) => x > 2 ? 3 : -3);
+export const regressLinear = getRegressFunc(baseFunctions.linear);
+export const regressQuadr = getRegressFunc(baseFunctions.quadr);
+export const regressQuadrShift = getRegressFunc(baseFunctions.quadrShift);
+export const regressSine = getRegressFunc(baseFunctions.sine);
+export const regressSigmoid = getRegressFunc(baseFunctions.sigmoid);
+export const regressStep = getRegressFunc(baseFunctions.step);
 
 /**
  * Returns a sample from a uniform [a, b] distribution.

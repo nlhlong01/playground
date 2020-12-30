@@ -56,8 +56,11 @@ body {
   margin-right: auto;
 }
 
-/* Buttons */
+.l--page.decision-tree {
+  width: 850px;
+}
 
+/* Buttons */
 #main-part .mdl-button {
   background-color: rgba(158, 158, 158, 0.1);
   width: 28px;
@@ -247,7 +250,7 @@ select:focus {
   top: -20px;
 }
 
-/* Main Part*/
+/* Main Part */
 #main-part {
   display: -webkit-box;
   display: -moz-box;
@@ -329,6 +332,8 @@ g.column rect {
 .main-viz {
   position: relative;
   margin: 10px 0;
+  display: flex;
+  justify-content: center;
 }
 
 .main-viz .tick line {
@@ -469,10 +474,6 @@ g.column rect {
   color: #777;
 }
 
-#loss-test {
-  color: black;
-}
-
 g.train circle {
   stroke: white;
   stroke-width: 1;
@@ -509,15 +510,6 @@ g.point circle {
   display: none;
 }
 
-@-webkit-keyframes flowing {
-  from {
-    stroke-dashoffset: 0;
-  }
-  to {
-    stroke-dashoffset: -10;
-  }
-}
-
 /* Article */
 article {
   background: white;
@@ -549,6 +541,22 @@ article p {
   font-size: 17px;
   line-height: 1.6;
   color: rgba(0, 0, 0, 0.7);
+}
+
+/* Tree Visualization */
+.tree-viz {
+  background: white;
+  box-shadow: 0 0px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
+}
+
+g.nodes .text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
 }
 
 /* Footer */

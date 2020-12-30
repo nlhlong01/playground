@@ -15,20 +15,24 @@ limitations under the License.
 ==============================================================================*/
 
 import * as d3 from 'd3';
-import { LineChart } from './linechart';
+import 'seedrandom';
+import {
+  RandomForestRegression as RFRegressor
+} from 'ml-random-forest';
+import * as Utils from '../utils';
+import { LineChart } from '../linechart';
 import {
   State,
   datasets,
   getKeyFromValue,
 } from './state';
-import { DataGenerator, Point, shuffle, isValid } from './dataset';
-import 'seedrandom';
 import {
-  RandomForestRegression as RFRegressor
-} from 'ml-random-forest';
-import '../styles.css';
-import 'material-design-lite';
-import 'material-design-lite/dist/material.indigo-blue.min.css';
+  DataGenerator,
+  Point,
+  shuffle,
+  isValid,
+  baseFunctions
+} from './dataset';
 
 const NUM_SAMPLES = 200;
 // Size of the linecharts.
@@ -37,10 +41,9 @@ const SIDE_LENGTH = 300;
 const DENSITY = 100;
 const NUM_VISIBLE_TREES = 16;
 
+const metricList = ['R2 Score'];
 const state = State.deserializeState();
-
 const xDomain: [number, number] = [-6, 6];
-
 // Plot the main linechart.
 const mainLineChart = new LineChart(
   SIDE_LENGTH,
@@ -49,7 +52,6 @@ const mainLineChart = new LineChart(
   d3.select('#main-linechart'),
   { showAxes: true }
 );
-
 // Plot the tree line charts.
 const treeLineCharts: LineChart[] = new Array(NUM_VISIBLE_TREES);
 for (let i = 0; i < NUM_VISIBLE_TREES; i++) {
@@ -73,6 +75,7 @@ let curve: Point[];
 let treeCurves: Point[][];
 let data: Point[];
 let uploadedData: Point[];
+let testMetrics;
 
 /**
  * Prepares the UI on startup.
@@ -81,6 +84,8 @@ function makeGUI() {
   d3.select('#start-button').on('click', () => {
     let pointIdx: number;
     let treeIdx = 0;
+    const yPred: number[] = new Array(NUM_SAMPLES);
+    const yTrue: number[] = new Array(NUM_SAMPLES);
     const xScale = d3
       .scaleLinear()
       .domain([0, DENSITY - 1])
@@ -91,28 +96,35 @@ function makeGUI() {
 
     // Initiate empty tree curves.
     treeCurves = new Array(NUM_VISIBLE_TREES);
-    for (treeIdx = 0; treeIdx < treeCurves.length; treeIdx++) {
+    for (treeIdx = 0; treeIdx < NUM_VISIBLE_TREES; treeIdx++) {
       treeCurves[treeIdx] = new Array(DENSITY);
     }
 
     // Initiate empty main curve.
     curve = new Array(DENSITY);
-    for (pointIdx = 0; pointIdx < curve.length; pointIdx++) {
+    for (pointIdx = 0; pointIdx < NUM_SAMPLES; pointIdx++) {
       const x = xScale(pointIdx);
       const treePredictions: number[] = regressor
         .predictionValues([[x]])
         .to2DArray()[0];
 
-      for (treeIdx = 0; treeIdx < treeCurves.length; treeIdx++) {
+      for (treeIdx = 0; treeIdx < NUM_VISIBLE_TREES; treeIdx++) {
         const y = treePredictions[treeIdx];
         treeCurves[treeIdx][pointIdx] = { x, y };
       }
 
-      // Get the final prediction which is the mean of trees' predictions.
+      // Get the final prediction based on the trees' predictions.
       const prediction: number = regressor.selection(treePredictions);
       const y = prediction;
       curve[pointIdx] = { x, y };
+
+      const datasetKey: string = getKeyFromValue(datasets, state.dataset);
+      const baseFunc = baseFunctions[datasetKey];
+      yTrue[pointIdx] = (baseFunc(x));
+      yPred[pointIdx] = (prediction);
     }
+
+    testMetrics = Utils.getRegrMetrics(yPred, yTrue);
 
     d3.selectAll('path.plot').remove();
     updateUI();
@@ -252,9 +264,16 @@ function updateUI() {
     treeLineCharts[i].updatePlot(treeCurves[i]);
   }
 
-  const updateMetric = (selector: string, value: number): void => {
-    d3.select(selector).text(value.toFixed(3));
-  };
+  // Metrics table
+  d3.selectAll('.metrics tbody tr').remove();
+  metricList.forEach((metric) => {
+    const row = d3.select('.metrics tbody').append('tr');
+    row.append('td')
+      .attr('class', 'mdl-data-table__cell--non-numeric')
+      .text(metric);
+    row.append('td')
+      .text(testMetrics ? testMetrics[metric].toFixed(3) : '0.000');
+  });
 }
 
 /**
@@ -272,11 +291,13 @@ function reset() {
   };
   regressor = null;
 
+  testMetrics = null;
+
   uploadedData = uploadedData || [];
 
   curve = new Array(NUM_SAMPLES);
   treeCurves = new Array(NUM_VISIBLE_TREES);
-  for (let i = 0; i < treeCurves.length; i++) {
+  for (let i = 0; i < NUM_VISIBLE_TREES; i++) {
     treeCurves[i] = new Array(DENSITY);
   }
 
