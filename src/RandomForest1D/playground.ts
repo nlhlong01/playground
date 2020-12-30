@@ -270,7 +270,7 @@ function updateUI() {
     const row = d3.select('.metrics tbody').append('tr');
     row.append('td')
       .attr('class', 'mdl-data-table__cell--non-numeric')
-      .text(metric[0].toLocaleUpperCase() + metric.slice(1));
+      .text(metric);
     row.append('td')
       .text(testMetrics ? testMetrics[metric].toFixed(3) : '0.000');
   });

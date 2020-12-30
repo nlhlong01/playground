@@ -430,7 +430,7 @@ function updateUI(reset = false) {
     // First row contains metric name
     row.append('td')
       .attr('class', 'mdl-data-table__cell--non-numeric')
-      .text(metric[0].toLocaleUpperCase() + metric.slice(1));
+      .text(metric);
     // Next 2 rows contain train and test metric values
     row.append('td')
       .text(trainMetrics ? trainMetrics[metric].toFixed(3) : '0.000');
