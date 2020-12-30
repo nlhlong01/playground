@@ -15,8 +15,9 @@ The UI of the Random Forest Playground is inspired by
 ## Deployment
 
 - Random Forest:
-  - [1-dimensional](https://nlhlong01.github.io/playground/rf1d.html).
-  - [2-dimensional](https://nlhlong01.github.io/playground).
+  - [1-dimensional](https://nlhlong01.github.io/playground/rf1d.html)
+  - [2-dimensional](https://nlhlong01.github.io/playground)
+- [Decision Tree](https://nlhlong01.github.io/playground/dt.html)
 
 ## Development
 
