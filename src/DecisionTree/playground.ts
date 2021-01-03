@@ -15,9 +15,12 @@ import * as d3 from 'd3';
 import 'seedrandom';
 // FIXME: Should use the custom-ml-cart alias.
 import {
+//   DecisionTreeClassifier as DTClassifier,
+//   DecisionTreeRegression as DTRegressor
+// } from '../../node_modules/custom-ml-cart/src/index';
   DecisionTreeClassifier as DTClassifier,
   DecisionTreeRegression as DTRegressor
-} from '../../node_modules/custom-ml-cart/src/index';
+} from '../../../decision-tree-cart/src/index';
 import * as Utils from '../utils';
 import { HeatMap } from '../heatmap';
 import { Tree } from '../tree';

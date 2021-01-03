@@ -114,6 +114,7 @@ export class LineChart {
 
     const line = d3
       .line<{ x: number; y: number }>()
+      .curve(d3.curveStepAfter)
       .x((d) => this.xScale(d.x))
       .y((d) => this.yScale(d.y));
 

@@ -23,7 +23,6 @@ export class Tree {
   }
 
   draw(data) {
-    console.log(data);
     const padding = 100;
 
     this.root = d3.hierarchy(
@@ -128,7 +127,6 @@ export class Tree {
     textBox.each(function(d) {
       const {
         kind,
-        giniImpurity,
         splitColumn,
         splitValue,
         samples,
@@ -145,19 +143,23 @@ export class Tree {
 
       text
         .append('div')
-        .html(`gini = ${giniImpurity.toFixed(3)}`);
-
-      text
-        .append('div')
         .html(`samples = ${samples}`);
 
       if (kind === 'classifier') {
+        text
+          .append('div')
+          .html(`gini = ${d.data.giniImpurity.toFixed(3)}`);
+
         const x = Math.round((distribution[0][0] || 0) * samples);
         const y = samples - x;
         text
           .append('div')
           .html(`dist = [${x}, ${y}]`);
       } else {
+        text
+          .append('div')
+          .html(`MSE = ${d.data.mse.toFixed(3)}`);
+
         const x = Math.round((distribution || 0) * samples);
         text
           .append('div')

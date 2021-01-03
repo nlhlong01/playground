@@ -79,6 +79,7 @@
       }
     ],
     "newline-per-chained-call": ["error", { "ignoreChainWithDepth": 3 }],
+    "no-console": "warn",
     "no-eval": "error",
     "no-fallthrough": "error",
     "no-redeclare": "error",
