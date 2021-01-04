@@ -1,7 +1,7 @@
 /* eslint-disable cypress/no-unnecessary-waiting */
 describe('Decision Tree E2E Tests', () => {
   it('should load Decision Tree Playground', () => {
-    cy.visit('localhost:5000/dt.html');
+    cy.visit('localhost:5000/decisiontree.html');
 
     cy.get('#main-heatmap svg g.train')
       .should('be.visible');

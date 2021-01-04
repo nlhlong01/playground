@@ -1,7 +1,7 @@
 /* eslint-disable cypress/no-unnecessary-waiting */
 describe('1-dimensional Random Forest E2E Tests', () => {
   it('should load 1-dimensional Random Forest Playground', () => {
-    cy.visit('localhost:5000/rf1d.html');
+    cy.visit('localhost:5000/randomforest1d.html');
 
     cy.get('#main-linechart svg g.point')
       .should('be.visible');

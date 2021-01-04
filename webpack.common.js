@@ -20,12 +20,12 @@ module.exports = {
     }),
     new HtmlWebpackPlugin({
       template: './RandomForest1D/index.html',
-      filename: 'rf1d.html',
+      filename: 'randomforest1d.html',
       inject: false
     }),
     new HtmlWebpackPlugin({
       template: './DecisionTree/index.html',
-      filename: 'dt.html',
+      filename: 'decisiontree.html',
       inject: false
     }),
     new MiniCssExtractPlugin({
@@ -41,7 +41,7 @@ module.exports = {
       },
       {
         test: /\.worker\.js$/,
-        use: { loader: 'worker-loader' }
+        loader: 'worker-loader'
       }
     ]
   },

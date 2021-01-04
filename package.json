@@ -5,8 +5,9 @@
   "private": true,
   "scripts": {
     "clean": "rimraf dist",
-    "lint": "eslint src",
+    "prebuild": "npm run clean",
     "build": "webpack --config webpack.prod.js",
+    "lint": "eslint src",
     "start": "webpack-dev-server --config webpack.dev.js",
     "test:run": "cypress run",
     "test:open": "cypress open",
@@ -14,7 +15,8 @@
     "test:dev": "start-server-and-test start http-get://localhost:5000 test:open",
     "test:coverage": "nyc npm run test",
     "test:run:coverage": "nyc npm run test:run",
-    "deploy": "npm run build && rimraf docs/* && copyfiles -f dist/* docs"
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "devDependencies": {
     "@babel/core": "^7.11.1",
@@ -43,6 +45,7 @@
     "eslint-plugin-react": "^7.20.0",
     "eslint-plugin-react-hooks": "^4.0.0",
     "extract-loader": "^5.1.0",
+    "gh-pages": "^3.1.0",
     "html-webpack-plugin": "^4.3.0",
     "mini-css-extract-plugin": "^0.10.0",
     "nyc": "^15.1.0",
