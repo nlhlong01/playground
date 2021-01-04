@@ -35,6 +35,7 @@ import {
 } from './dataset';
 
 const NUM_SAMPLES = 200;
+const NUM_TEST_SAMPLES = 50;
 // Size of the linecharts.
 const SIDE_LENGTH = 300;
 // # of points along the x-axis.
@@ -84,11 +85,11 @@ function makeGUI() {
   d3.select('#start-button').on('click', () => {
     let pointIdx: number;
     let treeIdx = 0;
-    const yPred: number[] = new Array(NUM_SAMPLES);
-    const yTrue: number[] = new Array(NUM_SAMPLES);
+    const yPred: number[] = new Array(NUM_TEST_SAMPLES);
+    const yTrue: number[] = new Array(NUM_TEST_SAMPLES);
     const xScale = d3
       .scaleLinear()
-      .domain([0, DENSITY - 1])
+      .domain([0, NUM_TEST_SAMPLES - 1])
       .range(xDomain);
 
     regressor = new RFRegressor(options);
@@ -102,7 +103,7 @@ function makeGUI() {
 
     // Initiate empty main curve.
     curve = new Array(DENSITY);
-    for (pointIdx = 0; pointIdx < NUM_SAMPLES; pointIdx++) {
+    for (pointIdx = 0; pointIdx < NUM_TEST_SAMPLES; pointIdx++) {
       const x = xScale(pointIdx);
       const treePredictions: number[] = regressor
         .predictionValues([[x]])
@@ -115,13 +116,12 @@ function makeGUI() {
 
       // Get the final prediction based on the trees' predictions.
       const prediction: number = regressor.selection(treePredictions);
-      const y = prediction;
-      curve[pointIdx] = { x, y };
+      curve[pointIdx] = { x, y: prediction };
 
       const datasetKey: string = getKeyFromValue(datasets, state.dataset);
       const baseFunc = baseFunctions[datasetKey];
       yTrue[pointIdx] = (baseFunc(x));
-      yPred[pointIdx] = (prediction);
+      yPred[pointIdx] = prediction;
     }
 
     testMetrics = Utils.getRegrMetrics(yPred, yTrue);

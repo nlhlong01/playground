@@ -46,11 +46,11 @@ describe('Decision Tree E2E Tests', () => {
       cy.get('.tree-viz svg g.nodes g').should('be.visible');
     });
 
-    // it('should switch to regression mode', () => {
-    //   cy.get('select#problem')
-    //     .select('regression', { force: true });
-    //   cy.get('canvas[data-regdataset="reg-gauss"]').click();
-    //   cy.get('button#start-button').click();
-    // });
+    it('should switch to regression mode and train', () => {
+      cy.get('select#problem')
+        .select('regression', { force: true });
+      cy.get('canvas[data-regdataset="reg-gauss"]').click();
+      cy.get('button#start-button').click();
+    });
   });
 });

@@ -191,7 +191,7 @@ export function regressPlane(numSamples: number, noise: number): Example2D[] {
   const radius = 6;
   const labelScale = d3
     .scaleLinear()
-    .domain([-10, 10])
+    .domain([-12, 12])
     .range([-1, 1]);
   const getLabel = (x: number, y: number) => labelScale(x + y);
 

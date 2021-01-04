@@ -95,7 +95,7 @@ describe('1-dimensional Random Forest E2E Tests', () => {
       cy.get('button#file-select').click();
     });
 
-    it('should switch to regression mode', () => {
+    it('should switch to regression mode and train', () => {
       cy.get('select#problem')
         .select('regression', { force: true });
       cy.get('canvas[data-regdataset="reg-gauss"]').click();

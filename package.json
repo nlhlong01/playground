@@ -50,7 +50,7 @@
     "mini-css-extract-plugin": "^0.10.0",
     "nyc": "^15.1.0",
     "rimraf": "2.5.4",
-    "start-server-and-test": "^1.11.3",
+    "start-server-and-test": "^1.11.7",
     "style-loader": "^1.2.1",
     "terser-webpack-plugin": "^4.1.0",
     "ts-loader": "^8.0.2",
