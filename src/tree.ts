@@ -160,10 +160,13 @@ export class Tree {
           .append('div')
           .html(`MSE = ${d.data.mse.toFixed(3)}`);
 
-        const x = Math.round((distribution || 0) * samples);
+        const valScale = d3
+          .scaleLinear()
+          .domain([0, 1])
+          .range([-1, 1]);
         text
           .append('div')
-          .html(`dist = ${x}`);
+          .html(`value = ${valScale(distribution).toFixed(3)}`);
       }
     });
   }
